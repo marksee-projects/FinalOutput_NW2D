@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Billing & Confirmation | Peninsula de Bataan Resort Hotel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+
+<body>
+
+  <!-- NAVBAR -->
+  <header class="navbar scrolled" id="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="nav-logo">
+        <span class="logo-icon">&#9670;</span>
+        <span class="logo-text">
+          <strong>Peninsula de Bataan</strong>
+          <small>Resort Hotel</small>
+        </span>
+      </a>
+      <nav class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="index.html#rooms">Rooms</a>
+        <a href="index.html#amenities">Amenities</a>
+        <a href="index.html#events">Events</a>
+        <a href="index.html#contact">Contact</a>
+      </nav>
+      <div class="nav-cta">
+        <button class="btn-login" onclick="openLoginModal()">Login</button>
+        <a href="index.html#reservation" class="btn-book">Book Now</a>
+      </div>
+      <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+    </div>
+    <div class="mobile-menu" id="mobileMenu">
+      <nav>
+        <a href="index.html" class="mobile-link">Home</a>
+        <a href="index.html#rooms" class="mobile-link">Rooms</a>
+        <a href="index.html#amenities" class="mobile-link">Amenities</a>
+        <a href="index.html#events" class="mobile-link">Events</a>
+        <a href="index.html#contact" class="mobile-link">Contact</a>
+        <div class="mobile-cta">
+          <button class="btn-login" onclick="openLoginModal()">Login</button>
+          <a href="index.html#reservation" class="btn-book">Book Now</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="billing-hero">
+    <div class="hero-content">
+      <p class="hero-tagline">Peninsula de Bataan Resort Hotel</p>
+      <h1 id="heroTitle">Booking Confirmation</h1>
+      <p id="heroSub">Review your reservation details before proceeding to payment</p>
+    </div>
+  </section>
+
+  <!-- STEPPER -->
+  <div class="stepper-wrap">
+    <div class="stepper">
+      <div class="step active" id="s1">
+        <div class="step-circle">1</div><span>Review</span>
+      </div>
+      <div class="step-line" id="l1"></div>
+      <div class="step" id="s2">
+        <div class="step-circle">2</div><span>Payment</span>
+      </div>
+      <div class="step-line" id="l2"></div>
+      <div class="step" id="s3">
+        <div class="step-circle">3</div><span>Complete</span>
+      </div>
+    </div>
+  </div>
+
+  <section class="billing-page">
+    <div class="container">
+
+      <div id="pageStep1">
+
+        <div id="noResNotice" class="no-res-notice" style="display:none;">
+          <div class="no-res-icon"><i class="fa-solid fa-calendar-xmark"></i></div>
+          <h3>No Active Reservation</h3>
+          <p>Please fill in the reservation form on the home page first.</p>
+          <a href="index.html#reservation" class="btn-primary btn-primary-icon">
+            <i class="fa-solid fa-calendar-plus"></i> Make a Reservation
+          </a>
+        </div>
+
+        <div id="confLayout" class="conf-layout" style="display:none;">
+
+          <div class="conf-card">
+            <div class="conf-photo">
+              <img src="../images/Home section.png" alt="Resort"
+                onerror="this.parentElement.style.background='linear-gradient(135deg,#256288,#4a9aba)';" />
+              <div class="conf-photo-overlay">
+                <span class="badge-received"><i class="fa-solid fa-circle-check"></i> Reservation Received</span>
+              </div>
+            </div>
+
+            <div class="conf-body">
+              <div class="conf-hotel-row">
+                <div>
+                  <h2 class="conf-hotel-name">Peninsula de Bataan Resort Hotel</h2>
+                  <p class="conf-hotel-addr"><i class="fa-solid fa-location-dot"></i> Brgy. Tagumpay, Orani, Bataan
+                    2112, Philippines</p>
+                </div>
+                <div class="conf-res-id" id="confId">—</div>
+              </div>
+
+              <div class="conf-dates-bar">
+                <div class="conf-date-col">
+                  <span class="conf-date-label">Check-In</span>
+                  <span class="conf-date-val" id="confCheckIn">—</span>
+                </div>
+                <div class="conf-date-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+                <div class="conf-date-col">
+                  <span class="conf-date-label">Check-Out</span>
+                  <span class="conf-date-val" id="confCheckOut">—</span>
+                </div>
+                <div class="conf-date-col conf-date-col-right">
+                  <span class="conf-date-label">Reservation</span>
+                  <span class="conf-date-val" id="confNightsSummary">—</span>
+                </div>
+              </div>
+
+              <div class="conf-items">
+                <div class="conf-item">
+                  <div>
+                    <p class="conf-item-name" id="confRoomLine">—</p>
+                    <p class="conf-item-sub" id="confGuestLine">—</p>
+                  </div>
+                  <span class="conf-item-price" id="confSubtotal">—</span>
+                </div>
+                <div class="conf-item">
+                  <div>
+                    <p class="conf-item-name">Service Fee <span class="conf-item-pct">(5%)</span></p>
+                    <p class="conf-item-sub">Included in total</p>
+                  </div>
+                  <span class="conf-item-price" id="confServiceFee">—</span>
+                </div>
+                <div class="conf-item">
+                  <div>
+                    <p class="conf-item-name">VAT <span class="conf-item-pct">(12%)</span></p>
+                    <p class="conf-item-sub">As required by TRAIN Law</p>
+                  </div>
+                  <span class="conf-item-price" id="confVat">—</span>
+                </div>
+              </div>
+
+              <div class="conf-total-bar">
+                <span class="conf-total-label"><i class="fa-solid fa-peso-sign"></i> Total Amount Due</span>
+                <span class="conf-total-amount" id="confTotal">—</span>
+              </div>
+
+              <p class="conf-note">
+                <i class="fa-solid fa-circle-info"></i>
+                Full payment is due upon check-in. We accept Cash, GCash, and Bank Transfer.
+              </p>
+            </div>
+
+            <div class="conf-actions">
+              <a href="index.html#reservation" class="btn-secondary-outline"><i class="fa-solid fa-arrow-left"></i>
+                Modify</a>
+              <button class="btn-primary btn-primary-icon" onclick="goToPayment()">Proceed to Payment <i
+                  class="fa-solid fa-arrow-right"></i></button>
+            </div>
+          </div>
+
+          <!-- Sidebar -->
+          <div class="conf-sidebar">
+            <div class="csb-section">
+              <h4 class="csb-title"><i class="fa-solid fa-bed"></i> Room Details</h4>
+              <div class="csb-row"><span>Room</span><strong id="sbRoom">—</strong></div>
+              <div class="csb-row"><span>Guests</span><strong id="sbGuests">—</strong></div>
+              <div class="csb-row"><span>Rate / Night</span><strong id="sbRate">—</strong></div>
+              <div class="csb-row"><span>Nights</span><strong id="sbNights">—</strong></div>
+            </div>
+            <div class="csb-section">
+              <h4 class="csb-title"><i class="fa-solid fa-calendar-days"></i> Schedule</h4>
+              <div class="csb-row"><span>Check-In</span><strong id="sbCheckIn">—</strong></div>
+              <div class="csb-row"><span>Check-Out</span><strong id="sbCheckOut">—</strong></div>
+            </div>
+            <div class="csb-section csb-total">
+              <h4 class="csb-title"><i class="fa-solid fa-receipt"></i> Bill Summary</h4>
+              <div class="csb-row"><span>Subtotal</span><strong id="sbSubtotal">—</strong></div>
+              <div class="csb-row"><span>Service Fee (5%)</span><strong id="sbService">—</strong></div>
+              <div class="csb-row"><span>VAT (12%)</span><strong id="sbVat">—</strong></div>
+              <div class="csb-row csb-grand"><span>Grand Total</span><strong id="sbGrand">—</strong></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="pageStep2" style="display:none;">
+        <div class="pay-layout">
+
+          <div class="pay-card">
+            <div class="pay-card-header">
+              <p class="pay-eyebrow">Secure Checkout</p>
+              <h2 class="pay-title">Payment Details</h2>
+            </div>
+
+            <!-- Method tabs -->
+            <div class="pay-methods">
+              <button class="pay-method active" id="methCash" onclick="selectMethod('cash')">
+                <i class="fa-solid fa-money-bills"></i> Cash
+              </button>
+              <button class="pay-method" id="methGcash" onclick="selectMethod('gcash')">
+                <i class="fa-solid fa-mobile-screen"></i> GCash
+              </button>
+              <button class="pay-method" id="methBank" onclick="selectMethod('bank')">
+                <i class="fa-solid fa-building-columns"></i> Bank Transfer
+              </button>
+            </div>
+
+            <!-- Guest info -->
+            <p class="pay-section-label">Guest Information</p>
+            <div class="pay-grid">
+              <div class="pay-field">
+                <label>First Name <span class="req">*</span></label>
+                <input type="text" id="pfirst" placeholder="Juan" />
+                <span class="pay-err" id="pfirstErr"></span>
+              </div>
+              <div class="pay-field">
+                <label>Last Name <span class="req">*</span></label>
+                <input type="text" id="plast" placeholder="dela Cruz" />
+                <span class="pay-err" id="plastErr"></span>
+              </div>
+              <div class="pay-field">
+                <label>Email Address <span class="req">*</span></label>
+                <input type="email" id="pemail" placeholder="juan@email.com" />
+                <span class="pay-err" id="pemailErr"></span>
+              </div>
+              <div class="pay-field">
+                <label>Phone Number <span class="req">*</span></label>
+                <input type="tel" id="pphone" placeholder="09XX XXX XXXX" />
+                <span class="pay-err" id="pphoneErr"></span>
+              </div>
+            </div>
+
+            <!-- Cash panel -->
+            <div id="panelCash" class="pay-panel">
+              <div class="pay-info-box">
+                <i class="fa-solid fa-circle-info"></i>
+                <div>
+                  <strong>Cash on Check-In</strong>
+                  <p>Please prepare the exact amount. Our front desk accepts cash payment upon arrival.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- GCash panel -->
+            <div id="panelGcash" class="pay-panel" style="display:none;">
+              <p class="pay-section-label">GCash Details</p>
+              <div class="pay-gcash-card">
+                <div class="gcash-logo"><i class="fa-solid fa-mobile-screen-button"></i> GCash</div>
+                <p class="gcash-number">09XX — XXX — XXXX</p>
+                <p class="gcash-name">Peninsula de Bataan Resort</p>
+              </div>
+              <div class="pay-field" style="margin-top:16px;">
+                <label>GCash Reference Number <span class="req">*</span></label>
+                <input type="text" id="pgcashRef" placeholder="e.g. 1234567890" />
+                <span class="pay-err" id="pgcashRefErr"></span>
+              </div>
+            </div>
+
+            <!-- Bank panel -->
+            <div id="panelBank" class="pay-panel" style="display:none;">
+              <p class="pay-section-label">Bank Transfer Details</p>
+              <div class="pay-bank-card">
+                <div class="bank-row"><span>Bank</span><strong>BDO Unibank</strong></div>
+                <div class="bank-row"><span>Account Name</span><strong>Peninsula de Bataan Resort</strong></div>
+                <div class="bank-row"><span>Account No.</span><strong>1234 — 5678 — 90</strong></div>
+              </div>
+              <div class="pay-field" style="margin-top:16px;">
+                <label>Bank Reference / Transaction No. <span class="req">*</span></label>
+                <input type="text" id="pbankRef" placeholder="e.g. TXN-1234567890" />
+                <span class="pay-err" id="pbankRefErr"></span>
+              </div>
+            </div>
+
+            <!-- Special requests -->
+            <p class="pay-section-label" style="margin-top:24px;">Special Requests <em
+                style="font-weight:300;font-style:normal;color:var(--text-light);font-size:.8rem;">(optional)</em></p>
+            <div class="pay-field">
+              <textarea id="pnotes" rows="3"
+                placeholder="Early check-in, extra towels, dietary requirements..."></textarea>
+            </div>
+
+            <!-- Terms -->
+            <label class="pay-terms">
+              <input type="checkbox" id="pTerms" />
+              <span>I agree to the <a href="#" class="forgot-link">Terms &amp; Conditions</a> and <a href="#"
+                  class="forgot-link">Cancellation Policy</a></span>
+            </label>
+            <span class="pay-err" id="pTermsErr"></span>
+
+            <div class="pay-actions">
+              <button class="btn-secondary-outline" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i>
+                Back</button>
+              <button class="btn-primary btn-primary-icon" onclick="submitPayment()"><i class="fa-solid fa-lock"></i>
+                Complete Reservation</button>
+            </div>
+          </div>
+
+          <!-- Pay sidebar -->
+          <div class="pay-summary">
+            <div class="csb-section">
+              <h4 class="csb-title"><i class="fa-solid fa-clipboard-list"></i> Order Summary</h4>
+              <div class="csb-row"><span>Reservation ID</span><strong id="ps-id">—</strong></div>
+              <div class="csb-row"><span>Room</span><strong id="ps-room">—</strong></div>
+              <div class="csb-row"><span>Guests</span><strong id="ps-guests">—</strong></div>
+              <div class="csb-row"><span>Check-In</span><strong id="ps-in">—</strong></div>
+              <div class="csb-row"><span>Check-Out</span><strong id="ps-out">—</strong></div>
+              <div class="csb-row"><span>Nights</span><strong id="ps-nights">—</strong></div>
+            </div>
+            <div class="csb-section csb-total">
+              <h4 class="csb-title"><i class="fa-solid fa-receipt"></i> Charges</h4>
+              <div class="csb-row"><span>Subtotal</span><strong id="ps-sub">—</strong></div>
+              <div class="csb-row"><span>Service Fee (5%)</span><strong id="ps-svc">—</strong></div>
+              <div class="csb-row"><span>VAT (12%)</span><strong id="ps-vat">—</strong></div>
+              <div class="csb-row csb-grand"><span>Total Due</span><strong id="ps-total">—</strong></div>
+            </div>
+            <div class="pay-secure">
+              <i class="fa-solid fa-shield-halved"></i>
+              <span>Your information is secured and protected</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <div id="pageStep3" style="display:none;">
+        <div class="complete-card">
+
+          <div class="complete-icon-wrap">
+            <div class="complete-icon"><i class="fa-solid fa-circle-check"></i></div>
+          </div>
+          <h2 class="complete-title">Reservation Confirmed!</h2>
+          <p class="complete-sub">Thank you for choosing Peninsula de Bataan Resort Hotel.<br>Your booking has been
+            successfully received.</p>
+
+          <!-- Full receipt -->
+          <div class="receipt">
+            <div class="receipt-head">
+              <div>
+                <p class="receipt-eyebrow">Official Booking Receipt</p>
+                <h3 class="receipt-hotel">Peninsula de Bataan Resort Hotel</h3>
+                <p class="receipt-addr"><i class="fa-solid fa-location-dot"></i> Brgy. Tagumpay, Orani, Bataan 2112</p>
+              </div>
+              <div class="receipt-id-block">
+                <span>Reservation No.</span>
+                <strong id="rcId">—</strong>
+              </div>
+            </div>
+
+            <div class="receipt-guest-grid">
+              <div class="receipt-field"><span>Guest Name</span><strong id="rcGuest">—</strong></div>
+              <div class="receipt-field"><span>Email</span><strong id="rcEmail">—</strong></div>
+              <div class="receipt-field"><span>Phone</span><strong id="rcPhone">—</strong></div>
+              <div class="receipt-field"><span>Payment</span><strong id="rcMethod">—</strong></div>
+            </div>
+
+            <div class="receipt-dates">
+              <div class="receipt-date-box"><span>Check-In</span><strong id="rcCheckIn">—</strong></div>
+              <div class="receipt-date-sep"><i class="fa-solid fa-arrow-right"></i></div>
+              <div class="receipt-date-box"><span>Check-Out</span><strong id="rcCheckOut">—</strong></div>
+              <div class="receipt-date-box"><span>Stay</span><strong id="rcNights">—</strong></div>
+            </div>
+
+            <div class="receipt-items">
+              <div class="receipt-item"><span id="rcRoomLine">—</span><span id="rcSubtotal">—</span></div>
+              <div class="receipt-item"><span>Service Fee (5%)</span><span id="rcServiceFee">—</span></div>
+              <div class="receipt-item"><span>VAT (12%)</span><span id="rcVat">—</span></div>
+              <div class="receipt-item receipt-item-total"><span>Total Amount Due</span><span id="rcTotal">—</span>
+              </div>
+            </div>
+
+            <p class="receipt-note">
+              <i class="fa-solid fa-circle-info"></i>
+              Please present this confirmation upon check-in. Inquiries: +63 47 237-XXXX · peninsulabataan@gmail.com
+            </p>
+          </div>
+
+          <div class="complete-actions">
+            <button class="btn-secondary-outline" onclick="window.print()"><i class="fa-solid fa-print"></i> Print
+              Receipt</button>
+            <a href="index.html" class="btn-primary btn-primary-icon"><i class="fa-solid fa-house"></i> Back to Home</a>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div class="footer-brand">
+        <span class="logo-icon">&#9670;</span>
+        <p class="footer-logo-text">Peninsula de Bataan<br /><small>Resort</small></p>
+        <p class="footer-tagline">Your Peaceful escape of Orani, Bataan, Peninsula, Philippines.</p>
+        <div class="social-links">
+          <a href="#" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+          <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+          <a href="#" aria-label="Twitter"><i class="fa-brands fa-x-twitter"></i></a>
+          <a href="#" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+        </div>
+      </div>
+      <div class="footer-links">
+        <h5>Quick Links</h5>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="index.html#rooms">Rooms &amp; Suites</a></li>
+          <li><a href="index.html#amenities">Amenities</a></li>
+          <li><a href="index.html#events">Events</a></li>
+          <li><a href="index.html#contact">Contact</a></li>
+        </ul>
+      </div>
+      <div class="footer-links">
+        <h5>Policies</h5>
+        <ul>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Terms &amp; Conditions</a></li>
+          <li><a href="#">Cancellation Policy</a></li>
+          <li><a href="#">FAQs</a></li>
+        </ul>
+      </div>
+      <div class="footer-contact">
+        <h5>Contact</h5>
+        <p><i class="fa-solid fa-location-dot"></i> Brgy, Tagumpay, Orani, Bataan 2112</p>
+        <p><i class="fa-solid fa-phone"></i> +63 47 237-XXXX</p>
+        <p><i class="fa-solid fa-envelope"></i> peninsulabataan@gmail.com</p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; <span id="year"></span> Peninsula de Bataan Resort Hotel. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <div class="modal-overlay" id="loginModal" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeLoginModal()">&times;</button>
+      <h2 class="modal-title">Sign In</h2>
+      <p class="modal-subtitle">Enter your credentials to access your account</p>
+      <form class="modal-form" novalidate>
+        <div class="form-group"><input type="email" id="loginEmail" placeholder="Email Address" required /></div>
+        <div class="form-group modal-password-wrap">
+          <input type="password" id="loginPassword" placeholder="Password" required />
+          <button type="button" class="toggle-pw" onclick="togglePassword()"><i class="fa-regular fa-eye"
+              id="eyeIcon"></i></button>
+        </div>
+        <div class="modal-row">
+          <label class="remember-me"><input type="checkbox" /> Remember me</label>
+          <a class="forgot-link">Forgot password?</a>
+        </div>
+        <button type="submit" class="btn-primary btn-full">Sign In</button>
+      </form>
+      <p class="modal-footer-text">Don't have an account? <a class="create-link" onclick="closeLoginModal()">Create
+          one</a></p>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <script src="../js/billing.js"></script>
+</body>
+
+</html>

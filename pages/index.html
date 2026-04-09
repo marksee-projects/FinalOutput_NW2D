@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Peninsula de Bataan Resort Hotel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+
+  <!-- ===== NAVBAR ===== -->
+  <header class="navbar" id="navbar">
+    <div class="nav-container">
+      <a href="#home" class="nav-logo">
+        <span class="logo-icon">&#9670;</span>
+        <span class="logo-text">
+          <strong>Peninsula de Bataan</strong>
+          <small>Resort Hotel</small>
+        </span>
+      </a>
+      <nav class="nav-links" aria-label="Primary navigation">
+        <a href="#home">Home</a>
+        <a href="#rooms">Rooms</a>
+        <a href="#amenities">Amenities</a>
+        <a href="#events">Events</a>
+        <a href="#contact">Contact</a>
+      </nav>
+      <div class="nav-cta">
+        <button class="btn-login" id ="loginBtn" onclick="openLoginModal()">Login</button>
+        <a href="#reservation" class="btn-book">Book Now</a>
+      </div>
+      <button class="hamburger" id="hamburger" aria-label="Toggle menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div class="mobile-menu" id="mobileMenu">
+      <nav>
+        <a href="#home" class="mobile-link">Home</a>
+        <a href="#rooms" class="mobile-link">Rooms</a>
+        <a href="#amenities" class="mobile-link">Amenities</a>
+        <a href="#dining" class="mobile-link">Dining</a>
+        <a href="#events" class="mobile-link">Events</a>
+        <a href="#contact" class="mobile-link">Contact</a>
+        <div class="mobile-cta">
+          <button class="btn-login" id="loginBtnMobile" onclick="openLoginModal()">Login</button>
+          <a href="#reservation" class="btn-book">Book Now</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ===== HERO ===== -->
+  <section class="hero" id="home">
+    <div class="hero-content">
+      <p class="hero-tagline">Bataan, Philippines</p>
+      <h1 class="hero-title">Welcome to<br />Peninsula de Bataan<br />Resort Hotel</h1>
+      <p class="hero-subtitle">Relax.&nbsp; Unwind.&nbsp; Experience Paradise.</p>
+      <div class="hero-buttons">
+        <a href="#reservation" class="btn-primary">Reserve Now</a>
+        <a href="#rooms" class="btn-outline">Explore Rooms</a>
+      </div>
+    </div>
+    <div class="scroll-indicator" aria-hidden="true">
+      <div class="mouse"><div class="wheel"></div></div>
+      <span>Scroll</span>
+    </div>
+  </section>
+
+  <!-- ===== RESERVATION ===== -->
+  <section class="reservation" id="reservation">
+    <div class="reservation-card">
+      <h2 class="section-label">Quick Reservation</h2>
+      <!-- Frontend only: add action="/api/reservations" method="POST" for backend -->
+      <form class="booking-form" id="bookingForm" novalidate>
+        <div class="form-group">
+          <label for="checkIn">Check-In</label>
+          <input type="date" id="checkIn" name="check_in" required />
+          <span class="form-error" id="checkInError"></span>
+        </div>
+        <div class="form-group">
+          <label for="checkOut">Check-Out</label>
+          <input type="date" id="checkOut" name="check_out" required />
+          <span class="form-error" id="checkOutError"></span>
+        </div>
+        <div class="form-group">
+          <label for="guests">Guests</label>
+          <select id="guests" name="guests" required>
+            <option value="">Select</option>
+            <option value="1">1 Guest</option>
+            <option value="2">2 Guests</option>
+            <option value="3">3 Guests</option>
+            <option value="4">4 Guests</option>
+            <option value="5+">5+ Guests</option>
+          </select>
+          <span class="form-error" id="guestsError"></span>
+        </div>
+        <div class="form-group">
+          <label for="roomType">Room Type</label>
+          <select id="roomType" name="room_type" required>
+            <option value="">Select Room</option>
+            <option value="villa1">Villa 1</option>
+            <option value="villaA">Villa A</option>
+            <option value="villaD">Villa D</option>
+            <option value="alejandro">Alejandro</option>
+          </select>
+          <span class="form-error" id="roomTypeError"></span>
+        </div>
+        <button type="submit" class="btn-primary btn-full">Check Availability
+        </button>
+        
+            <div id="availNotice" style="display:none; margin-top:14px; padding:12px 16px;
+          border-radius:10px; font-size:.875rem; font-family:sans-serif;"></div>
+
+          <button type="button" id="proceedToBilling" class="btn-primary btn-full"
+        style="display:none; margin-top:12px;">
+        Proceed to Billing
+        </button>
+      </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- ===== ABOUT ===== -->
+  <section class="about" id="about">
+    <div class="container about-grid">
+      <div class="about-image">
+        <img src="../Images/Resort View.png" alt="Resort pool" loading="lazy" />
+        <div class="about-badge">
+          <span class="badge-number">Brgy.</span>
+          <span class="badge-year">Tagumpay</span>
+        </div>
+      </div>
+      <div class="about-text">
+        <p class="eyebrow">About the Resort</p>
+        <h2>A Peaceful Escape for<br /><em>Rest and Relaxation</em></h2>
+        <p>Located in Brgy. Tagumpay, Orani, Bataan. Our resort offers an escape unlike any other. Wake up to the gentle noise of nature, dine at terrace area with a garden view, and let the warm Philippine sun restore your spirit.</p>
+        <p>Whether you're planning a romantic retreat, a fun-filled family vacation, or a productive corporate gathering, the resort provides a perfect blend of comfort, hospitality, and natural beauty along one of Bataan known resort.</p>
+        <ul class="about-highlights">
+          <li><i class="fa-solid fa-check"></i> Adult Pool &amp; kiddie Pool</li>
+          <li><i class="fa-solid fa-check"></i> Events &amp; Conference facilities</li>
+          <li><i class="fa-solid fa-check"></i> 24hour Security &amp; Basketball Court</li>
+          <li><i class="fa-solid fa-check"></i> Parking Space &amp; Common BBQ Grill Area</li>
+        </ul>
+        <a href="#rooms" class="btn-primary">Discover Rooms</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== ROOMS ===== -->
+  <section class="rooms" id="rooms">
+    <div class="container">
+      <div class="section-header">
+        <p class="eyebrow">Accommodations</p>
+        <h2>Our Rooms &amp; Suites</h2>
+        <p class="section-desc">Each room is thoughtfully designed with quality materials, good views, and every modern comfort.</p>
+      </div>
+      <div class="rooms-grid">
+
+        <article class="room-card" data-room="villa1">
+          <div class="room-img-wrap">
+            <img src="../images/Villa 1.jpg" alt="Villa 1" loading="lazy" />
+            <span class="room-badge">&#8369;2,500 Daytime / Overnight 3,000</span>
+          </div>
+          <div class="room-info">
+            <h3>Villa 1</h3>
+            <p>Spacious room with Two Double bed size, garden-view at the front, and modern decor.</p>
+            <div class="room-features">
+              <span><i class="fa-solid fa-bed"></i> Double Bed</span>
+              <span><i class="fa-solid fa-person"></i> 5 Guests</span>
+              <span><i class="fa-solid fa-wifi"></i> Free Wi-Fi</span>
+            </div>
+            <button class="btn-outline btn-room" onclick="viewRoom('villa1')">View Details</button>
+          </div>
+        </article>
+
+        <article class="room-card" data-room="villaA">
+          <div class="room-img-wrap">
+            <img src="../images/Image9.jpg" alt="villaA" loading="lazy" />
+            <span class="room-badge">&#8369;2,500 Daytime / Overnight 3,000</span>
+          </div>
+          <div class="room-info">
+            <h3>Villa A</h3>
+            <p>Spacious room with Two Single bed size, garden-view at the front, and modern decor.</p>
+            <div class="room-features">
+              <span><i class="fa-solid fa-bed"></i> Two Single Bed</span>
+              <span><i class="fa-solid fa-person"></i> 5 Guests</span>
+              <span><i class="fa-solid fa-hot-tub-person"></i>RestRoom</span>
+            </div>
+            <button class="btn-outline btn-room" onclick="viewRoom('suite')">View Details</button>
+          </div>
+        </article>
+
+        <article class="room-card" data-room="villaD">
+          <div class="room-img-wrap">
+            <img src="../images/Villa D.png" alt="Villa D" loading="lazy" />
+            <span class="room-badge"> &#8369;4,000 Daytime / 4,500 Overnight</span>
+          </div>
+          <div class="room-info">
+            <h3>Villa D</h3>
+            <p>Spacious room with Singel king Size Bed, RestRoom, and Open ground.</p>
+            <div class="room-features">
+              <span><i class="fa-solid fa-bed"></i> 6 double Bed</span>
+              <span><i class="fa-solid fa-person"></i> 8 Guests</span>
+              <span><i class="fa-solid fa-water-ladder"></i>Free Wi-Fi</span>
+            </div>
+            <button class="btn-outline btn-room" onclick="viewRoom('villa')">View Details</button>
+          </div>
+        </article>
+
+        <article class="room-card" data-room="Alejandro">
+          <div class="room-img-wrap">
+            <img src="../images/Alejandro.png" alt="Alejandro" loading="lazy" />
+            <span class="room-badge">&#8369;3,500 Daytime / 4,000 Overnight</span>
+          </div>
+          <div class="room-info">
+            <h3>Alejandro</h3>
+            <p>Spacious room with two King Bed Size, RestRoom, and modern decor.</p>
+            <div class="room-features">
+              <span><i class="fa-solid fa-bed"></i> 2 king Bed Size</span>
+              <span><i class="fa-solid fa-person"></i> 6 Guests</span>
+              <span><i class="fa-solid fa-star"></i> Free Wi-Fi with Aircon</span>
+            </div>
+            <button class="btn-outline btn-room" onclick="viewRoom('presidential')">View Details</button>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== AMENITIES ===== -->
+  <section class="amenities" id="amenities">
+    <div class="container">
+      <div class="section-header">
+        <p class="eyebrow">What We Offer</p>
+        <h2>Resort Amenities</h2>
+      </div>
+      <div class="amenities-grid">
+        <div class="amenity-card">
+          <div class="amenity-img-wrap">
+            <img src="../Images/pool area.jpg" alt="poolArea" loading="lazy" />
+          </div>
+          <i class="fa-solid fa-water-ladder amenity-icon"></i>
+          <h4>Adult and Kids Pool</h4>
+          <p>Enjoy both adult and kids’ swimming pools, with a lifeguard on duty for safety.</p>
+        </div>
+        <div class="amenity-card">
+          <div class="amenity-img-wrap">
+            <img src="../Images/Villas.jpg" alt="Villas" loading="lazy" />
+          </div>
+          <i class="fa-solid fa-spa amenity-icon"></i>
+          <h4>Villas</h4>
+          <p>Relax at the spa or stay comfortably in our private villas.</p>
+        </div>
+        <div class="amenity-card">
+          <div class="amenity-img-wrap">
+            <img src="../Images/event.jpg" alt="Event hall" loading="lazy" />
+          </div>
+          <i class="fa-solid fa-utensils amenity-icon"></i>
+          <h4>Event Hall</h4>
+          <p>The event hall is perfect for weddings, debuts, and other special occasions.</p>
+        </div>
+        <div class="amenity-card">
+          <div class="amenity-img-wrap">
+            <img src="../Images/cottages.jpg" alt="Cottages" loading="lazy" />
+          </div>
+          <i class="fa-solid fa-house amenity-icon"></i>
+          <h4>Cottages</h4>
+          <p>Cottages are available with electricity and can accommodate up to 10 guests.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+ 
+
+  <!-- ===== EVENTS ===== -->
+  <section class="events" id="events">
+  <div class="container">
+    <div class="section-header">
+      <p class="eyebrow">Celebrations &amp; Gatherings</p>
+      <h2>Events at the Resort</h2>
+      <p class="section-desc">Celebrate life’s special moments in a beautiful setting with our dedicated events team ready to assist you.</p>
+    </div>
+    <div class="events-grid">
+      <div class="event-card">
+        <i class="fa-solid fa-heart"></i>
+        <h4>Weddings</h4>
+        <p>Enjoy a romantic beachfront wedding with customized decorations and catering.</p>
+      </div>
+      <div class="event-card">
+        <i class="fa-solid fa-cake-candles"></i>
+        <h4>Debut</h4>
+        <p>Make your 18th birthday unforgettable with elegant setups and memorable celebrations.</p>
+      </div>
+      <div class="event-card">
+        <i class="fa-solid fa-champagne-glasses"></i>
+        <h4>Special Occasions</h4>
+        <p>Perfect for birthdays, anniversaries, reunions, and other meaningful gatherings.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+  <!-- ===== CONTACT ===== -->
+  <section class="contact" id="contact">
+    <div class="container contact-grid">
+      <div class="contact-info">
+        <p class="eyebrow">Get in Touch</p>
+        <h2>We'd Love to Hear<br />From You</h2>
+        <ul class="contact-details">
+          <li><i class="fa-solid fa-location-dot"></i><span>Brgy, Tagumpay, Orani, Bataan 2112, Philippines</span></li>
+          <li><i class="fa-solid fa-phone"></i><a href="tel:+6347237XXXX">+63 47 237-XXXX</a></li>
+          <li><i class="fa-solid fa-envelope"></i><a href="peninsulabataan@gmail.com">info@peninsulabataan.ph</a></li>
+          <li><i class="fa-solid fa-clock"></i><span>Front Desk open 8 to 5</span></li>
+        </ul>
+      </div>
+      <!-- Wire action="/api/contact" method="POST" for backend -->
+      <form class="contact-form" id="contactForm" novalidate>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cName">Full Name</label>
+            <input type="text" id="cName" name="name" placeholder="Juan dela Cruz" required />
+            <span class="form-error" id="cNameError"></span>
+          </div>
+          <div class="form-group">
+            <label for="cEmail">Email</label>
+            <input type="email" id="cEmail" name="email" placeholder="you@email.com" required />
+            <span class="form-error" id="cEmailError"></span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="cMessage">Message</label>
+          <textarea id="cMessage" name="message" rows="5" placeholder="Tell us how we can help..." required></textarea>
+          <span class="form-error" id="cMessageError"></span>
+        </div>
+        <button type="submit" class="btn-primary">Send Message</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div class="footer-brand">
+        <span class="logo-icon">&#9670;</span>
+        <p class="footer-logo-text">Peninsula de Bataan<br /><small>Resort</small></p>
+        <p class="footer-tagline">Your Peaceful escape of Orani, Bataan, Peninsula, Philippines.</p>
+        <div class="social-links">
+          <a href="#" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+          <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+          <a href="#" aria-label="Twitter"><i class="fa-brands fa-x-twitter"></i></a>
+          <a href="#" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+        </div>
+      </div>
+      <div class="footer-links">
+        <h5>Quick Links</h5>
+        <ul>
+          <li><a href="#home">Home</a></li>
+          <li><a href="#rooms">Rooms &amp; Suites</a></li>
+          <li><a href="#amenities">Amenities</a></li>
+          <li><a href="#dining">Dining</a></li>
+          <li><a href="#events">Events</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </div>
+      <div class="footer-links">
+        <h5>Policies</h5>
+        <ul>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Terms &amp; Conditions</a></li>
+          <li><a href="#">Cancellation Policy</a></li>
+          <li><a href="#">FAQs</a></li>
+        </ul>
+      </div>
+      <div class="footer-contact">
+        <h5>Contact</h5>
+        <p><i class="fa-solid fa-location-dot"></i> Brgy,Tagumpay, Orani, Bataan 2112</p>
+        <p><i class="fa-solid fa-phone"></i> +63 47 237-XXXX</p>
+        <p><i class="fa-solid fa-envelope"></i> peninsulabataan@gmail.com</p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; <span id="year"></span> Peninsula de Bataan Resort Hotel. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- ===== LOGIN MODAL ===== -->
+<div class="modal-overlay" id="loginModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal-card">
+    <button class="modal-close" onclick="closeLoginModal()" aria-label="Close">&times;</button>
+    <h2 class="modal-title" id="modalTitle">Sign In</h2>
+    <p class="modal-subtitle">Enter your credentials to access your account</p>
+
+    <form class="modal-form" id="loginForm" novalidate>
+      <div class="form-group">
+        <input type="email" id="loginEmail" name="email" placeholder="Email Address" required />
+      </div>
+      <div class="form-group modal-password-wrap">
+        <input type="password" id="loginPassword" name="password" placeholder="Password" required />
+        <button type="button" class="toggle-pw" onclick="togglePassword()" aria-label="Show password">
+          <i class="fa-regular fa-eye" id="eyeIcon"></i>
+        </button>
+      </div>
+      <div class="modal-row">
+        <label class="remember-me">
+          <input type="checkbox" name="remember" /> Remember me
+        </label>
+        <a class="forgot-link">Forgot password?</a>
+      </div>
+      <button type="submit" class="btn-primary btn-full">Sign In</button>
+    </form>
+    <p class="modal-footer-text">Don't have an account? <a class="create-link" onclick="switchToRegister()">Create one</a></p>
+  </div>
+</div>
+
+<!-- ===== REGISTER MODAL ===== -->
+<div class="modal-overlay" id="registerModal" role="dialog" aria-modal="true" aria-labelledby="registerModalTitle">
+  <div class="modal-card">
+    <button class="modal-close" onclick="closeRegisterModal()" aria-label="Close">&times;</button>
+    <h2 class="modal-title" id="registerModalTitle">Create Account</h2>
+    <p class="modal-subtitle">Fill in the details below to get started</p>
+
+    <form class="modal-form" id="registerForm" novalidate>
+      <div class="form-row">
+        <div class="form-group">
+          <input type="text" id="regFirstName" name="first_name" placeholder="First Name" required />
+        </div>
+        <div class="form-group">
+          <input type="text" id="regLastName" name="last_name" placeholder="Last Name" required />
+        </div>
+      </div>
+      <div class="form-group">
+        <input type="email" id="regEmail" name="email" placeholder="Email Address" required />
+      </div>
+      <div class="form-group">
+        <input type="tel" id="regPhone" name="phone" placeholder="Phone Number" />
+      </div>
+      <div class="form-group modal-password-wrap">
+        <input type="password" id="regPassword" name="password" placeholder="Password" required />
+        <button type="button" class="toggle-pw" onclick="toggleRegPassword()" aria-label="Show password">
+          <i class="fa-regular fa-eye" id="regEyeIcon"></i>
+        </button>
+      </div>
+      <div class="form-group modal-password-wrap">
+        <input type="password" id="regConfirmPassword" name="confirm_password" placeholder="Confirm Password" required />
+        <button type="button" class="toggle-pw" onclick="toggleRegConfirmPassword()" aria-label="Show confirm password">
+          <i class="fa-regular fa-eye" id="regConfirmEyeIcon"></i>
+        </button>
+      </div>
+      <div class="modal-row">
+        <label class="remember-me">
+          <input type="checkbox" name="agree" id="agreeTerms" required />
+          I agree to the <a href="#" class="forgot-link" style="margin-left:4px;">Terms &amp; Conditions</a>
+        </label>
+      </div>
+      <button type="submit" class="btn-primary btn-full">Create Account</button>
+    </form>
+
+    <p class="modal-footer-text">Already have an account? <a href="#" class="create-link" onclick="switchToLogin()">Sign in</a></p>
+  </div>
+</div>
+  <!-- Toast notification -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="../js/app.js"></script>
+</body>
+</html>

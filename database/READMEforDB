@@ -1,0 +1,5 @@
+IMPORT THE DATABASE INTO YOUR LOCALHOST/PHPMYADMIN 
+
+To import:
+
+Create database -> should be the same NAME (resort_db) -> navigate niyo ung export button -> then click Go.

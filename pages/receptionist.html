@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Reservations | Peninsula de Bataan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+
+<!-- ===== NAVBAR ===== -->
+<header class="navbar">
+  <div class="nav-container">
+    <a href="index.html" class="nav-logo">
+      <span class="logo-icon">&#9670;</span>
+      <span class="logo-text">
+        <strong>Peninsula de Bataan</strong>
+        <small>Resort Hotel</small>
+      </span>
+    </a>
+    <span class="nav-badge">Receptionist</span>
+    <a href="index.html" class="nav-back">
+      <i class="fa-solid fa-arrow-left"></i> Back to Site
+    </a>
+  </div>
+</header>
+
+<!-- ===== MAIN ===== -->
+<main class="admin-wrap">
+
+  <!-- Page heading -->
+  <div class="page-header">
+    <p class="eyebrow">Management</p>
+    <h1>Reservations Dashboard</h1>
+    <p>View, update, and manage all resort reservations.</p>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon total"><i class="fa-solid fa-calendar-days"></i></div>
+      <div class="stat-info">
+        <span class="stat-number" id="totalCount">—</span>
+        <span class="stat-label">Total Bookings</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon pending"><i class="fa-solid fa-clock"></i></div>
+      <div class="stat-info">
+        <span class="stat-number" id="pendingCount">—</span>
+        <span class="stat-label">Pending</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon confirmed"><i class="fa-solid fa-circle-check"></i></div>
+      <div class="stat-info">
+        <span class="stat-number" id="confirmedCount">—</span>
+        <span class="stat-label">Confirmed</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon cancelled"><i class="fa-solid fa-circle-xmark"></i></div>
+      <div class="stat-info">
+        <span class="stat-number" id="cancelledCount">—</span>
+        <span class="stat-label">Cancelled</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filter-bar">
+    <span class="filter-label">Filter by</span>
+    <select id="filterStatus">
+      <option value="">All Statuses</option>
+      <option value="pending">Pending</option>
+      <option value="confirmed">Confirmed</option>
+      <option value="cancelled">Cancelled</option>
+    </select>
+    <select id="filterRoom">
+      <option value="">All Rooms</option>
+      <option value="villa1">Villa 1</option>
+      <option value="villaA">Villa A</option>
+      <option value="villaD">Villa D</option>
+      <option value="alejandro">Alejandro</option>
+    </select>
+    <div class="filter-divider"></div>
+    <button class="btn-filter" onclick="loadReservations()">
+      <i class="fa-solid fa-magnifying-glass"></i> Apply
+    </button>
+    <button class="btn-reset" onclick="resetFilters()">
+      <i class="fa-solid fa-rotate"></i> Reset
+    </button>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrapper">
+    <div class="table-header">
+      <span class="table-title">All Reservations</span>
+      <span class="table-count" id="tableCount">Loading…</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Room</th>
+          <th>Check-In</th>
+          <th>Check-Out</th>
+          <th>Guests</th>
+          <th>Status</th>
+          <th>Booked At</th>
+          <th>Update Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="reservationsBody">
+        <tr class="state-row">
+          <td colspan="9">
+            <div class="state-icon"><i class="fa-solid fa-spinner fa-spin"></i></div>
+            <div class="state-text">Loading reservations…</div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+  const roomLabels = {
+    villa1:    "Villa 1",
+    villaA:    "Villa A",
+    villaD:    "Villa D",
+    alejandro: "Alejandro",
+  };
+
+  async function loadReservations() {
+    const status = document.getElementById("filterStatus").value;
+    const room   = document.getElementById("filterRoom").value;
+    let url = "get_bookings.php?";
+    if (status) url += "status="    + encodeURIComponent(status) + "&";
+    if (room)   url += "room_type=" + encodeURIComponent(room)   + "&";
+
+    try {
+      const res  = await fetch(url);
+      const data = await res.json();
+      const rows = data.reservations || [];
+      updateStats(rows);
+      renderTable(rows);
+    } catch {
+      document.getElementById("reservationsBody").innerHTML = emptyState("Could not load reservations. Make sure XAMPP is running.");
+      document.getElementById("tableCount").textContent = "Error";
+    }
+  }
+
+  function updateStats(rows) {
+    document.getElementById("totalCount").textContent     = rows.length;
+    document.getElementById("pendingCount").textContent   = rows.filter(r => r.status === "pending").length;
+    document.getElementById("confirmedCount").textContent = rows.filter(r => r.status === "confirmed").length;
+    document.getElementById("cancelledCount").textContent = rows.filter(r => r.status === "cancelled").length;
+    document.getElementById("tableCount").textContent     = rows.length + " reservation" + (rows.length !== 1 ? "s" : "");
+  }
+
+  function renderTable(rows) {
+    const tbody = document.getElementById("reservationsBody");
+    if (rows.length === 0) { tbody.innerHTML = emptyState("No reservations found."); return; }
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td class="td-id">#${r.id}</td>
+        <td class="td-room">${roomLabels[r.room_type] || r.room_type}</td>
+        <td class="td-date">${formatDate(r.check_in)}</td>
+        <td class="td-date">${formatDate(r.check_out)}</td>
+        <td class="td-date">${r.guests}</td>
+        <td><span class="badge ${r.status}">${r.status}</span></td>
+        <td class="td-date">${formatDateTime(r.created_at)}</td>
+        <td>
+          <form class="status-form" onsubmit="updateStatus(event, ${r.id})">
+            <select name="status">
+              <option value="pending"   ${r.status==="pending"   ? "selected":""}>Pending</option>
+              <option value="confirmed" ${r.status==="confirmed" ? "selected":""}>Confirmed</option>
+              <option value="cancelled" ${r.status==="cancelled" ? "selected":""}>Cancelled</option>
+            </select>
+            <button type="submit" class="btn-save">Save</button>
+          </form>
+        </td>
+        <td>
+          <button class="btn-delete" onclick="deleteReservation(${r.id})">
+            <i class="fa-solid fa-trash-can"></i> Delete
+          </button>
+        </td>
+      </tr>
+    `).join("");
+  }
+
+  function emptyState(msg) {
+    return `<tr class="state-row"><td colspan="9">
+      <div class="state-icon"><i class="fa-solid fa-calendar-xmark"></i></div>
+      <div class="state-text">${msg}</div>
+    </td></tr>`;
+  }
+
+  async function updateStatus(e, id) {
+    e.preventDefault();
+    const status = e.target.status.value;
+    const fd = new FormData();
+    fd.append("id", id); fd.append("status", status);
+    try {
+      const res    = await fetch("update_booking.php", { method: "POST", body: fd });
+      const result = await res.json();
+      showToast(result.success ? "✅ Status updated." : "❌ " + result.message, result.success ? "success" : "error");
+      if (result.success) loadReservations();
+    } catch { showToast("❌ Could not update status.", "error"); }
+  }
+
+  async function deleteReservation(id) {
+    if (!confirm("Delete reservation #" + id + "?\nThis cannot be undone.")) return;
+    const fd = new FormData();
+    fd.append("id", id);
+    try {
+      const res    = await fetch("delete_booking.php", { method: "POST", body: fd });
+      const result = await res.json();
+      showToast(result.success ? "🗑 Reservation deleted." : "❌ " + result.message, result.success ? "success" : "error");
+      if (result.success) loadReservations();
+    } catch { showToast("❌ Could not delete.", "error"); }
+  }
+
+  function resetFilters() {
+    document.getElementById("filterStatus").value = "";
+    document.getElementById("filterRoom").value   = "";
+    loadReservations();
+  }
+
+  function formatDate(str) {
+    if (!str) return "—";
+    return new Date(str + "T00:00:00").toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" });
+  }
+  function formatDateTime(str) {
+    if (!str) return "—";
+    return new Date(str).toLocaleString("en-US", { month:"short", day:"numeric", year:"numeric", hour:"2-digit", minute:"2-digit" });
+  }
+
+  function showToast(msg, type = "") {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.className   = "toast show" + (type ? " " + type : "");
+    setTimeout(() => t.className = "toast", 3500);
+  }
+
+  loadReservations();
+  setInterval(loadReservations, 30000);
+</script>
+
+</body>
+</html>
