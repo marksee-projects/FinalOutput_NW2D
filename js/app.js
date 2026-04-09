@@ -675,26 +675,31 @@ async function checkSession() {
         loginBtnMobile.addEventListener('click', handleLogout);
       }
 
-      // Inject Dashboard button if receptionist
+      // Inject Receptionist button natively into the main navigation flow
       if (data.role === 'receptionist') {
-        const navCta = document.querySelector('.nav-cta');
-        if (navCta && !document.getElementById('dashBtnDesktop')) {
+        const navLinks = document.querySelector('.nav-links');
+        if (navLinks && !document.getElementById('dashBtnDesktop')) {
           const dash = document.createElement('a');
           dash.href = 'receptionist.html';
-          dash.className = 'btn-outline';
           dash.id = 'dashBtnDesktop';
-          dash.textContent = 'Dashboard';
-          navCta.insertBefore(dash, navCta.firstChild);
+          dash.textContent = 'Receptionist';
+          navLinks.appendChild(dash);
         }
 
-        const mobileCta = document.querySelector('.mobile-cta');
-        if (mobileCta && !document.getElementById('dashBtnMobile')) {
+        const mobileNav = document.querySelector('.mobile-menu nav');
+        if (mobileNav && !document.getElementById('dashBtnMobile')) {
           const dashMob = document.createElement('a');
           dashMob.href = 'receptionist.html';
-          dashMob.className = 'btn-outline';
+          dashMob.className = 'mobile-link';
           dashMob.id = 'dashBtnMobile';
-          dashMob.textContent = 'Dashboard';
-          mobileCta.insertBefore(dashMob, mobileCta.firstChild);
+          dashMob.textContent = 'Receptionist';
+          // Insert it dynamically before the mobile-cta block
+          const mobileCta = mobileNav.querySelector('.mobile-cta');
+          if (mobileCta) {
+            mobileNav.insertBefore(dashMob, mobileCta);
+          } else {
+            mobileNav.appendChild(dashMob);
+          }
         }
       }
     } else {

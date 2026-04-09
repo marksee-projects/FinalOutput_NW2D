@@ -10,10 +10,10 @@ if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'receptionist')
 
 require_once "db_connect.php";
 
-$where  = [];
+$where  = ["status != 'deleted'"];
 $params = [];
 
-if (!empty($_GET["status"])) {
+if (!empty($_GET["status"]) && $_GET["status"] !== 'deleted') {
     $where[]           = "status = :status";
     $params[":status"] = $_GET["status"];
 }
@@ -28,7 +28,7 @@ $sql .= " ORDER BY created_at DESC";
 
 try {
     // Phase 3: Fetch UNFILTERED global counts
-    $statsStmt = $pdo->query("SELECT status FROM reservations");
+    $statsStmt = $pdo->query("SELECT status FROM reservations WHERE status != 'deleted'");
     $allStatuses = $statsStmt->fetchAll(PDO::FETCH_COLUMN);
     
     $globalStats = [

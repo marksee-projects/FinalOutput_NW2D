@@ -5,6 +5,8 @@ const roomLabels = {
   alejandro: "Alejandro",
 };
 
+let csrfToken = '';
+
 async function loadReservations() {
   const status = document.getElementById("filterStatus").value;
   const room   = document.getElementById("filterRoom").value;
@@ -83,8 +85,9 @@ function renderTable(rows) {
 }
 
 function emptyState(msg) {
-  return `<tr class="state-row"><td colspan="9">
-    <div class="state-icon"><i class="fa-solid fa-calendar-xmark"></i></div>
+  return `<tr class="empty-state-row"><td colspan="9">
+    <div class="empty-state-icon"><i class="fa-solid fa-folder-open"></i></div>
+    <div class="empty-state-text">No reservations found.</div>
     <div class="state-text">${msg}</div>
   </td></tr>`;
 }
@@ -94,24 +97,32 @@ async function updateStatus(e, id) {
   const status = e.target.status.value;
   const fd = new FormData();
   fd.append("id", id); fd.append("status", status);
+  fd.append("csrf_token", csrfToken);
   try {
     const res    = await fetch("update_booking.php", { method: "POST", body: fd });
     const result = await res.json();
     showToast(result.success ? "✅ Status updated." : "❌ " + result.message, result.success ? "success" : "error");
     if (result.success) loadReservations();
-  } catch { showToast("❌ Could not update status.", "error"); }
+  } catch (err) { 
+    console.error("Update status error:", err);
+    showToast("❌ Could not update status.", "error"); 
+  }
 }
 
 async function deleteReservation(id) {
   if (!confirm("Delete reservation #" + id + "?\nThis cannot be undone.")) return;
   const fd = new FormData();
   fd.append("id", id);
+  fd.append("csrf_token", csrfToken);
   try {
     const res    = await fetch("delete_booking.php", { method: "POST", body: fd });
     const result = await res.json();
     showToast(result.success ? "🗑 Reservation deleted." : "❌ " + result.message, result.success ? "success" : "error");
     if (result.success) loadReservations();
-  } catch { showToast("❌ Could not delete.", "error"); }
+  } catch (err) { 
+    console.error("Delete reservation error:", err);
+    showToast("❌ Could not delete.", "error"); 
+  }
 }
 
 function resetFilters() {
@@ -147,6 +158,7 @@ function showToast(msg, type = "") {
       window.location.href = 'index.html';
       return;
     }
+    csrfToken = data.csrf_token || '';
   } catch {
     window.location.href = 'index.html';
     return;

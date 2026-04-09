@@ -35,6 +35,7 @@ session_regenerate_id(true);
 $_SESSION['user_id']   = $user['id'];
 $_SESSION['user_name'] = $user['first_name'];
 $_SESSION['user_role'] = $user['role']; 
+$_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 
 echo json_encode([
     'success' => true,
@@ -45,5 +46,6 @@ echo json_encode([
         'email' => $user['email'],
         'phone' => $user['phone'],
         'role'  => $user['role'], 
+        'csrf_token' => $_SESSION['csrf_token'],
     ]
 ]);

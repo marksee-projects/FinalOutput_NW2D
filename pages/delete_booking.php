@@ -16,6 +16,12 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     exit;
 }
 
+if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'])) {
+    http_response_code(403);
+    echo json_encode(["success" => false, "message" => "CSRF token mismatch."]);
+    exit;
+}
+
 $id = intval($_POST["id"] ?? 0);
 
 if (!$id) {
@@ -25,7 +31,7 @@ if (!$id) {
 }
 
 try {
-    $stmt = $pdo->prepare("DELETE FROM reservations WHERE id = :id");
+    $stmt = $pdo->prepare("UPDATE reservations SET status = 'deleted' WHERE id = :id");
     $stmt->execute([":id" => $id]);
     echo json_encode(["success" => true, "message" => "Reservation deleted."]);
 } catch (PDOException $e) {

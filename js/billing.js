@@ -84,6 +84,15 @@ function loadConfirmation() {
     return;
   }
 
+  // Phase 2: Check for presence of dbId to abort on legacy stale caches
+  if (!reservation || !reservation.dbId) {
+    $('noResNotice').style.display = '';
+    $('confLayout').style.display  = 'none';
+    showToast('Stale session data detected. Please book again.', 'error');
+    sessionStorage.removeItem('pendingReservation');
+    return;
+  }
+
  
   const rate      = ROOM_RATES[reservation.roomKey] || { label: reservation.roomKey, dayRate: 0, nightRate: 0 };
   
@@ -207,7 +216,12 @@ async function submitPayment() {
 
   try {
     const fd = new FormData();
-    fd.append("reservation_id", reservation.id); // Securely link the pending reservation id
+    fd.append("reservation_id", reservation.dbId); // Securely link the pending reservation true dbId
+    
+    // Phase 1: Securely append guest data to store in backend
+    fd.append("guest_name", guest.firstName + " " + guest.lastName);
+    fd.append("guest_email", guest.email);
+    fd.append("guest_phone", guest.phone);
     
     // Call our new backend to lock the state and recalculate the secure price 
     const response = await fetch("confirm_payment.php", { method: "POST", body: fd });

@@ -1,5 +1,6 @@
 <?php
 header("Content-Type: application/json");
+session_start();
 
 require_once "db_connect.php";
 
@@ -50,6 +51,10 @@ if (strtotime($checkIn) < strtotime('today')) {
 }
 
 try {
+    $lockName = "room_lock_" . md5($roomType);
+    $pdo->exec("SELECT GET_LOCK('$lockName', 10)");
+    $pdo->beginTransaction();
+
     // ── Conflict check ──
     $conflict = $pdo->prepare("
         SELECT id FROM reservations
@@ -66,6 +71,8 @@ try {
     ]);
 
     if ($conflict->fetch()) {
+        $pdo->rollBack();
+        $pdo->exec("SELECT RELEASE_LOCK('$lockName')");
         http_response_code(409);
         echo json_encode([
             "success"  => false,
@@ -76,24 +83,36 @@ try {
     }
 
     // ── Save booking ──
+    $userId = $_SESSION['user_id'] ?? null;
     $stmt = $pdo->prepare("
-        INSERT INTO reservations (check_in, check_out, guests, room_type)
-        VALUES (:check_in, :check_out, :guests, :room_type)
+        INSERT INTO reservations (user_id, check_in, check_out, guests, room_type)
+        VALUES (:user_id, :check_in, :check_out, :guests, :room_type)
     ");
     $stmt->execute([
+        ":user_id"   => $userId,
         ":check_in"  => $checkIn,
         ":check_out" => $checkOut,
         ":guests"    => $guests,
         ":room_type" => $roomType,
     ]);
+    
+    $newId = $pdo->lastInsertId();
+    $pdo->commit();
+    $pdo->exec("SELECT RELEASE_LOCK('$lockName')");
 
     echo json_encode([
         "success" => true,
         "message" => "Reservation saved successfully!",
-        "id"      => $pdo->lastInsertId()
+        "id"      => $newId
     ]);
 
 } catch (PDOException $e) {
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+    if (isset($lockName)) {
+        $pdo->exec("SELECT RELEASE_LOCK('$lockName')");
+    }
     error_log("save_booking error: " . $e->getMessage());
     http_response_code(500);
     echo json_encode(["success" => false, "message" => "Failed to save reservation. Please try again."]);

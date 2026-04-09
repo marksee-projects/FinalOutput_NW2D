@@ -16,6 +16,12 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     exit;
 }
 
+if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'])) {
+    http_response_code(403);
+    echo json_encode(["success" => false, "message" => "CSRF token mismatch."]);
+    exit;
+}
+
 $id      = intval($_POST["id"]   ?? 0);
 $status  = trim($_POST["status"] ?? "");
 $allowed = ["pending", "confirmed", "cancelled"];
