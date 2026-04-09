@@ -1,8 +1,8 @@
 const ROOM_RATES = {
-  'Villa 1':       { label:'Villa 1',               dayRate:2500, nightRate:3000 },
-  'Villa A':       { label:'Villa A',               dayRate:2500, nightRate:3000 },
-  'Villa D':       { label:'Villa D',               dayRate:4000, nightRate:4500 },
-  'Alejandro':    { label:'Alejandro',             dayRate:3500, nightRate:4000 },
+  'villa1':    { label:'Villa 1',   dayRate:2500, nightRate:3000 },
+  'villaA':    { label:'Villa A',   dayRate:2500, nightRate:3000 },
+  'villaD':    { label:'Villa D',   dayRate:4000, nightRate:4500 },
+  'alejandro': { label:'Alejandro', dayRate:3500, nightRate:4000 },
 };
 
 const SVC_RATE = 0.05;
@@ -67,7 +67,6 @@ function showStep(n) {
 
 function loadConfirmation() {
   const raw = sessionStorage.getItem('pendingReservation');
-  console.log("Reservation Data:", reservation);
 
   if (!raw) {
     $('noResNotice').style.display = '';
@@ -75,7 +74,15 @@ function loadConfirmation() {
     return;
   }
 
-  reservation = JSON.parse(raw);
+  try {
+    reservation = JSON.parse(raw);
+  } catch {
+    $('noResNotice').style.display = '';
+    $('confLayout').style.display  = 'none';
+    showToast('Invalid reservation data. Please book again.', 'error');
+    sessionStorage.removeItem('pendingReservation');
+    return;
+  }
 
  
   const rate      = ROOM_RATES[reservation.roomKey] || { label: reservation.roomKey, dayRate: 0, nightRate: 0 };
@@ -158,7 +165,7 @@ function selectMethod(m) {
 }
 
 /* Validate + submit payment */
-function submitPayment() {
+async function submitPayment() {
   let ok = true;
   const err  = (id, msg) => { setText(id + 'Err', msg); ok = false; };
   const clr  = id => setText(id + 'Err', '');
@@ -184,7 +191,11 @@ function submitPayment() {
 
   if (!ok) { showToast('Please fix the errors above.', 'error'); return; }
 
-  
+  // Show a loading UI state natively here if we want, or just wait for network
+  const submitBtn = document.querySelector('.btn-primary[type="button"]');
+  const oldText = submitBtn ? submitBtn.textContent : '';
+  if (submitBtn) submitBtn.textContent = 'Processing...';
+
   const guest = {
     firstName: $('pfirst').value.trim(),
     lastName:  $('plast').value.trim(),
@@ -194,31 +205,53 @@ function submitPayment() {
     method:    selectedMethod,
   };
 
-  const methodLabels = { cash:'Cash on Check-In', gcash:'GCash', bank:'Bank Transfer' };
+  try {
+    const fd = new FormData();
+    fd.append("reservation_id", reservation.id); // Securely link the pending reservation id
+    
+    // Call our new backend to lock the state and recalculate the secure price 
+    const response = await fetch("confirm_payment.php", { method: "POST", body: fd });
+    const result   = await response.json();
 
-  reservation.guest  = guest;
-  reservation.status = 'Confirmed';
-  reservation.confirmedAt = new Date().toISOString();
-  sessionStorage.setItem('confirmedReservation', JSON.stringify(reservation));
-  sessionStorage.removeItem('pendingReservation');
+    if (result.success) {
+      const methodLabels = { cash:'Cash on Check-In', gcash:'GCash', bank:'Bank Transfer' };
+      const r = result.receipt;
 
-  /* ── Populate receipt ── */
-  setText('rcId',          reservation.id);
-  setText('rcGuest',       guest.firstName + ' ' + guest.lastName);
-  setText('rcEmail',       guest.email);
-  setText('rcPhone',       guest.phone);
-  setText('rcMethod',      methodLabels[guest.method] || guest.method);
-  setText('rcCheckIn',     fmtDate(reservation.checkIn));
-  setText('rcCheckOut',    fmtDate(reservation.checkOut));
-  setText('rcNights',      reservation._nights + (reservation._nights===1?' night':' nights'));
-  setText('rcRoomLine',    reservation._room + ' (' + guestLabel(reservation.guests) + ')');
-  setText('rcSubtotal',    php(reservation._subtotal));
-  setText('rcServiceFee', php(reservation._svc));
-  setText('rcVat',         php(reservation._vat));
-  setText('rcTotal',       php(reservation._total));
+      reservation.guest  = guest;
+      reservation.status = 'Confirmed';
+      reservation.confirmedAt = new Date().toISOString();
+      sessionStorage.setItem('confirmedReservation', JSON.stringify(reservation));
+      sessionStorage.removeItem('pendingReservation');
 
-  showStep(3);
-  showToast('Reservation confirmed! 🎉', 'success');
+      /* ── Populate receipt with BACKEND confirmed numbers ── */
+      setText('rcId',          reservation.id);
+      setText('rcGuest',       guest.firstName + ' ' + guest.lastName);
+      setText('rcEmail',       guest.email);
+      setText('rcPhone',       guest.phone);
+      setText('rcMethod',      methodLabels[guest.method] || guest.method);
+      setText('rcCheckIn',     fmtDate(reservation.checkIn));
+      setText('rcCheckOut',    fmtDate(reservation.checkOut));
+      
+      // Use Backend exact values for price components
+      setText('rcNights',      r.nights + (r.nights === 1 ? ' night' : ' nights'));
+      setText('rcRoomLine',    r.room + ' (' + guestLabel(reservation.guests) + ')');
+      setText('rcSubtotal',    php(r.subtotal));
+      setText('rcServiceFee',  php(r.svc));
+      setText('rcVat',         php(r.vat));
+      setText('rcTotal',       php(r.total));
+
+      showStep(3);
+      showToast('Reservation confirmed! 🎉', 'success');
+      
+    } else {
+      if (submitBtn) submitBtn.textContent = oldText;
+      showToast(result.message || 'Payment processing failed.', 'error');
+    }
+  } catch (err) {
+    if (submitBtn) submitBtn.textContent = oldText;
+    console.error(err);
+    showToast('Network error, please try again.', 'error');
+  }
 }
 
 

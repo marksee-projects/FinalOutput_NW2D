@@ -16,11 +16,12 @@ const loginModal  = document.getElementById('loginModal');
 const toast       = document.getElementById('toast');
 const yearSpan    = document.getElementById('year');
 
+/* Room rates keyed by DB value → display label + pricing */
 const ROOM_RATES = {
-    'Villa 1':   { nightRate: 3000 },
-    'Villa A':   { nightRate: 3000 },
-    'Villa D':   { nightRate: 4500 },
-    'Alejandro': { nightRate: 4000 }
+  'villa1':    { label: 'Villa 1',   dayRate: 2500, nightRate: 3000 },
+  'villaA':    { label: 'Villa A',   dayRate: 2500, nightRate: 3000 },
+  'villaD':    { label: 'Villa D',   dayRate: 4000, nightRate: 4500 },
+  'alejandro': { label: 'Alejandro', dayRate: 3500, nightRate: 4000 },
 };
 
 // Set current year in footer
@@ -128,7 +129,7 @@ function isValidEmail(email) {
 
 
 /* =================================================================
-   BOOKING FORM — validation + submission
+   BOOKING FORM — Smart Button + Availability Check
    ================================================================= */
 const bookingForm = document.getElementById("bookingForm");
 
@@ -142,113 +143,324 @@ const checkOutError = document.getElementById("checkOutError");
 const guestsError   = document.getElementById("guestsError");
 const roomTypeError = document.getElementById("roomTypeError");
 
+const smartBtn      = document.getElementById("smartBtn");
+const smartBtnText  = document.getElementById("smartBtnText");
+const smartBtnIcon  = document.getElementById("smartBtnIcon");
+const availBanner   = document.getElementById("availBanner");
+const availBannerTx = document.getElementById("availBannerText");
+
+// Original room option labels (before we append "Unavailable")
+const roomOptionDefaults = [];
+Array.from(roomType.options).forEach(opt => {
+  roomOptionDefaults.push({ value: opt.value, text: opt.textContent });
+});
+
+// ── State machine ──
+// 'check'   → User needs to pick dates; button says "Check Availability"
+// 'proceed' → Dates are valid + room available; button says "Proceed to Billing"
+let formState    = 'check';
+let bookedRooms  = [];   // array of room_type keys currently unavailable
+let availChecked = false; // have we checked availability for the current dates?
+
+// Set today as min date for check-in
+const today = new Date().toISOString().split('T')[0];
+checkIn.setAttribute('min', today);
+
+/* ── Update the button appearance based on state ── */
+function updateSmartButton() {
+  smartBtn.classList.remove('btn-proceed', 'btn-loading');
+  smartBtn.disabled = false;
+
+  if (formState === 'check') {
+    smartBtnIcon.className = 'fa-solid fa-magnifying-glass';
+    smartBtnText.textContent = 'Check Availability';
+  } else if (formState === 'proceed') {
+    smartBtn.classList.add('btn-proceed');
+    smartBtnIcon.className = 'fa-solid fa-arrow-right';
+    smartBtnText.textContent = 'Proceed to Billing';
+  }
+}
+
+/* ── Show/hide the status banner ── */
+function showBanner(message, type) {
+  // type: 'success' | 'warning' | 'error'
+  availBanner.className = 'avail-banner avail-' + type;
+  availBanner.style.display = 'flex';
+  const iconMap = {
+    success: 'fa-solid fa-circle-check',
+    warning: 'fa-solid fa-triangle-exclamation',
+    error:   'fa-solid fa-circle-xmark',
+  };
+  availBanner.querySelector('i').className = iconMap[type] || 'fa-solid fa-circle-info';
+  availBannerTx.textContent = message;
+}
+
+function hideBanner() {
+  availBanner.style.display = 'none';
+}
+
+/* ── Update room dropdown based on availability ── */
+function updateRoomDropdown() {
+  roomOptionDefaults.forEach(({ value, text }) => {
+    const opt = roomType.querySelector(`option[value="${value}"]`);
+    if (!opt) return;
+    if (bookedRooms.includes(value)) {
+      opt.textContent = text + ' (Unavailable)';
+      opt.disabled = true;
+      opt.classList.add('room-unavailable');
+    } else {
+      opt.textContent = text;
+      opt.disabled = false;
+      opt.classList.remove('room-unavailable');
+    }
+  });
+
+  // If currently selected room is now unavailable, deselect it
+  if (roomType.value && bookedRooms.includes(roomType.value)) {
+    roomType.value = '';
+    formState = 'check';
+    updateSmartButton();
+  }
+}
+
+/* ── Check availability via backend ── */
+async function checkAvailability() {
+  if (!checkIn.value || !checkOut.value) return;
+
+  // Validate dates first
+  const inDate  = new Date(checkIn.value);
+  const outDate = new Date(checkOut.value);
+  if (outDate <= inDate) {
+    checkOutError.textContent = 'Check-out must be after check-in.';
+    return;
+  }
+
+  // Set min for checkout
+  checkOut.setAttribute('min', checkIn.value);
+
+  // Show loading state
+  smartBtn.classList.add('btn-loading');
+  smartBtnIcon.className = 'fa-solid fa-spinner fa-spin';
+  smartBtnText.textContent = 'Checking...';
+
+  try {
+    const url = `check_availability.php?in=${encodeURIComponent(checkIn.value)}&out=${encodeURIComponent(checkOut.value)}`;
+    const res  = await fetch(url);
+    const data = await res.json();
+
+    bookedRooms = data.booked_rooms || [];
+    availChecked = true;
+    updateRoomDropdown();
+
+    const totalRooms = roomOptionDefaults.filter(o => o.value).length;  // exclude placeholder
+    const availCount = totalRooms - bookedRooms.length;
+
+    if (availCount === 0) {
+      showBanner('All rooms are fully booked for these dates. Please try different dates.', 'error');
+      formState = 'check';
+    } else if (bookedRooms.length > 0) {
+      showBanner(`${availCount} of ${totalRooms} rooms available. Unavailable rooms are greyed out.`, 'warning');
+      formState = 'check'; // still need to pick a room
+    } else {
+      showBanner('All rooms are available for your selected dates!', 'success');
+      formState = 'check'; // still need to pick a room
+    }
+
+  } catch (err) {
+    console.error('Availability check failed:', err);
+    showBanner('Could not check availability. Make sure XAMPP is running.', 'error');
+    bookedRooms = [];
+    availChecked = false;
+  }
+
+  updateSmartButton();
+}
+
+/* ── When dates change, reset availability and re-check ── */
+checkIn.addEventListener('change', () => {
+  checkInError.textContent = '';
+  // Set min checkout to check-in date
+  if (checkIn.value) {
+    checkOut.setAttribute('min', checkIn.value);
+    // If checkout is before new check-in, clear it
+    if (checkOut.value && checkOut.value <= checkIn.value) {
+      checkOut.value = '';
+    }
+  }
+  availChecked = false;
+  formState = 'check';
+  hideBanner();
+  updateSmartButton();
+
+  // Auto-check if both dates are set
+  if (checkIn.value && checkOut.value) {
+    checkAvailability();
+  }
+});
+
+checkOut.addEventListener('change', () => {
+  checkOutError.textContent = '';
+  availChecked = false;
+  formState = 'check';
+  hideBanner();
+  updateSmartButton();
+
+  // Auto-check if both dates are set
+  if (checkIn.value && checkOut.value) {
+    // Validate checkout > checkin
+    if (new Date(checkOut.value) <= new Date(checkIn.value)) {
+      checkOutError.textContent = 'Check-out must be after check-in.';
+      return;
+    }
+    checkAvailability();
+  }
+});
+
+/* ── When room changes, update button state ── */
+roomType.addEventListener('change', () => {
+  roomTypeError.textContent = '';
+  if (availChecked && roomType.value && !bookedRooms.includes(roomType.value)) {
+    formState = 'proceed';
+  } else {
+    formState = 'check';
+  }
+  updateSmartButton();
+});
+
+guests.addEventListener('change', () => {
+  guestsError.textContent = '';
+});
+
+/* ── Form submit handler (smart button) ── */
 bookingForm.addEventListener("submit", async function(e) {
   e.preventDefault();
 
   let valid = true;
 
-  // clear previous errors
+  // Clear previous errors
   checkInError.textContent  = "";
   checkOutError.textContent = "";
   guestsError.textContent   = "";
   roomTypeError.textContent = "";
 
-  // check-in
-  if(checkIn.value === "") {
+  // Validate check-in
+  if (!checkIn.value) {
     checkInError.textContent = "Please select check-in date.";
     valid = false;
   }
 
-  // check-out
-  if(checkOut.value === "") {
+  // Validate check-out
+  if (!checkOut.value) {
     checkOutError.textContent = "Please select check-out date.";
     valid = false;
   }
 
-  // check-out must be after check-in
-  if(checkIn.value && checkOut.value) {
-    const inDate  = new Date(checkIn.value);
-    const outDate = new Date(checkOut.value);
-    if(outDate <= inDate) {
+  // Check-out must be after check-in
+  if (checkIn.value && checkOut.value) {
+    if (new Date(checkOut.value) <= new Date(checkIn.value)) {
       checkOutError.textContent = "Check-out must be after check-in.";
       valid = false;
     }
   }
 
-  // guests
-  if(guests.value === "") {
+  // Validate guests
+  if (!guests.value) {
     guestsError.textContent = "Please select number of guests.";
     valid = false;
   }
 
-  // room type
-  if(roomType.value === "") {
-    roomTypeError.textContent = "Please select room type.";
+  // Validate room
+  if (!roomType.value) {
+    roomTypeError.textContent = "Please select a room type.";
     valid = false;
   }
 
-  if(!valid) return;
+  if (!valid) return;
 
-  // ── Send to PHP ──────────────────────────────
-  const formData = new FormData();
-  formData.append("check_in",  checkIn.value);
-  formData.append("check_out", checkOut.value);
-  formData.append("guests",    guests.value);
-  formData.append("room_type", roomType.value);
+  // ── STATE: CHECK → run availability ──
+  if (formState === 'check') {
+    await checkAvailability();
 
-  try {
-    const response = await fetch("save_booking.php", {
-      method: "POST",
-      body:   formData,
-    });
-
-    const result = await response.json();
-
-    if(result.success) {
-
-      const selectedRoom = roomType.options[roomType.selectedIndex].text;
-      const nightRate = ROOM_RATES[selectedRoom]?.nightRate || 0;
-      const n = Math.max(1, Math.round(
-        (new Date(checkOut.value) - new Date(checkIn.value)) / 86400000
-      ));
-
-      const reservation = {
-        id:        'R' + String(result.id).padStart(3, '0'),
-        dbId:      result.id,
-        checkIn:   checkIn.value,
-        checkOut:  checkOut.value,
-        guests:    guests.value,
-        roomLabel: selectedRoom,
-        nightRate: nightRate,
-        nights:    n,
-        status:    'Pending'
-      };
-
-      console.log("Saving reservation:", reservation);
-      sessionStorage.setItem('pendingReservation', JSON.stringify(reservation));
-
-      showToast("✅ Reservation submitted! (ID #" + result.id + ")", "success");
-      bookingForm.reset();
-
-      // show billing button
-      document.getElementById("proceedToBilling").style.display = "block";
-
-    } else if(result.conflict) {
-      roomTypeError.textContent = "Already booked with someone else. Please choose a different date and room.";
-      showToast("❌ This room is already booked for those dates.");
-      document.getElementById("proceedToBilling").style.display = "none";
-
-    } else {
-      showToast("❌ Error: " + result.message);
-      document.getElementById("proceedToBilling").style.display = "none";
+    // After checking, if a valid room is already selected, auto-advance
+    if (availChecked && roomType.value && !bookedRooms.includes(roomType.value)) {
+      formState = 'proceed';
+      updateSmartButton();
+      showToast('✅ Room is available! Click "Proceed to Billing" to continue.', 'success');
     }
-
-  } catch(err) {
-    console.error("Fetch error:", err);
-    showToast("❌ Could not connect to the server. Make sure XAMPP is running.");
-    document.getElementById("proceedToBilling").style.display = "none";
+    return;
   }
 
+  // ── STATE: PROCEED → save booking + redirect to billing ──
+  if (formState === 'proceed') {
+    // Show loading
+    smartBtn.classList.add('btn-loading');
+    smartBtnIcon.className = 'fa-solid fa-spinner fa-spin';
+    smartBtnText.textContent = 'Saving...';
+
+    const formData = new FormData();
+    formData.append("check_in",  checkIn.value);
+    formData.append("check_out", checkOut.value);
+    formData.append("guests",    guests.value);
+    formData.append("room_type", roomType.value);
+
+    try {
+      const response = await fetch("save_booking.php", {
+        method: "POST",
+        body:   formData,
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        const roomKey   = roomType.value;
+        const rate      = ROOM_RATES[roomKey] || {};
+        const nightRate = rate.nightRate || 0;
+        const n = Math.max(1, Math.round(
+          (new Date(checkOut.value) - new Date(checkIn.value)) / 86400000
+        ));
+
+        const reservation = {
+          id:        'R' + String(result.id).padStart(3, '0'),
+          dbId:      result.id,
+          checkIn:   checkIn.value,
+          checkOut:  checkOut.value,
+          guests:    guests.value,
+          roomKey:   roomKey,
+          roomLabel: rate.label || roomKey,
+          nightRate: nightRate,
+          nights:    n,
+          status:    'Pending'
+        };
+
+        sessionStorage.setItem('pendingReservation', JSON.stringify(reservation));
+        showToast("✅ Reservation saved! Redirecting to billing...", "success");
+
+        // Redirect to billing after short delay for toast visibility
+        setTimeout(() => {
+          window.location.href = 'billing.html';
+        }, 800);
+
+      } else if (result.conflict) {
+        showBanner('This room is already booked for those dates. Please choose a different room or dates.', 'error');
+        showToast("❌ Room is no longer available.", "error");
+        formState = 'check';
+        updateSmartButton();
+        // Re-check availability to refresh dropdown
+        await checkAvailability();
+
+      } else {
+        showToast("❌ Error: " + result.message, "error");
+        formState = 'check';
+        updateSmartButton();
+      }
+
+    } catch (err) {
+      console.error("Fetch error:", err);
+      showToast("❌ Could not connect to the server. Make sure XAMPP is running.", "error");
+      formState = 'check';
+      updateSmartButton();
+    }
+  }
 });
 
 
@@ -377,6 +589,8 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
       window.location.href = 'index.html';
     }
   }, 1000);
+    } else {
+      showToast(data.message || 'Invalid email or password.', 'error');
     }
   } catch (err) {
     showToast('Network error. Please try again.', 'error');
@@ -438,24 +652,64 @@ document.getElementById('registerForm').addEventListener('submit', async functio
 /* =================================================================
    SESSION CHECK — replace Login button with first name
    ================================================================= */
-function checkSession() {
-  const firstName = localStorage.getItem('firstName');
+async function checkSession() {
+  try {
+    const res = await fetch('session.php');
+    if (!res.ok) return;
+    const data = await res.json();
 
-  if (firstName) {
-    ['loginBtn', 'loginBtnMobile'].forEach(id => {
-      const btn = document.getElementById(id);
-      if (btn) {
-        btn.textContent = firstName;
-        btn.setAttribute('onclick', '');
-        btn.addEventListener('click', function(e) {
-          e.preventDefault();
-          if (confirm('Are you sure you want to log out?')) {
-            localStorage.clear();
-            window.location.href = 'logout.php';
-          }
-        });
+    if (data.loggedIn) {
+      // Update DESKTOP nav
+      const loginBtn = document.getElementById('loginBtn');
+      if (loginBtn) {
+        loginBtn.textContent = data.firstName;
+        loginBtn.setAttribute('onclick', '');
+        loginBtn.addEventListener('click', handleLogout);
       }
-    });
+      
+      // Update MOBILE nav
+      const loginBtnMobile = document.getElementById('loginBtnMobile');
+      if (loginBtnMobile) {
+        loginBtnMobile.textContent = data.firstName;
+        loginBtnMobile.setAttribute('onclick', '');
+        loginBtnMobile.addEventListener('click', handleLogout);
+      }
+
+      // Inject Dashboard button if receptionist
+      if (data.role === 'receptionist') {
+        const navCta = document.querySelector('.nav-cta');
+        if (navCta && !document.getElementById('dashBtnDesktop')) {
+          const dash = document.createElement('a');
+          dash.href = 'receptionist.html';
+          dash.className = 'btn-outline';
+          dash.id = 'dashBtnDesktop';
+          dash.textContent = 'Dashboard';
+          navCta.insertBefore(dash, navCta.firstChild);
+        }
+
+        const mobileCta = document.querySelector('.mobile-cta');
+        if (mobileCta && !document.getElementById('dashBtnMobile')) {
+          const dashMob = document.createElement('a');
+          dashMob.href = 'receptionist.html';
+          dashMob.className = 'btn-outline';
+          dashMob.id = 'dashBtnMobile';
+          dashMob.textContent = 'Dashboard';
+          mobileCta.insertBefore(dashMob, mobileCta.firstChild);
+        }
+      }
+    } else {
+      localStorage.clear();
+    }
+  } catch (err) {
+    console.error('Session check failed:', err);
+  }
+}
+
+function handleLogout(e) {
+  e.preventDefault();
+  if (confirm('Are you sure you want to log out?')) {
+    localStorage.clear();
+    window.location.href = 'logout.php';
   }
 }
 

@@ -74,52 +74,55 @@
   <section class="reservation" id="reservation">
     <div class="reservation-card">
       <h2 class="section-label">Quick Reservation</h2>
-      <!-- Frontend only: add action="/api/reservations" method="POST" for backend -->
+      <p class="reservation-subtitle">Select your dates to check room availability</p>
       <form class="booking-form" id="bookingForm" novalidate>
-        <div class="form-group">
-          <label for="checkIn">Check-In</label>
-          <input type="date" id="checkIn" name="check_in" required />
-          <span class="form-error" id="checkInError"></span>
-        </div>
-        <div class="form-group">
-          <label for="checkOut">Check-Out</label>
-          <input type="date" id="checkOut" name="check_out" required />
-          <span class="form-error" id="checkOutError"></span>
-        </div>
-        <div class="form-group">
-          <label for="guests">Guests</label>
-          <select id="guests" name="guests" required>
-            <option value="">Select</option>
-            <option value="1">1 Guest</option>
-            <option value="2">2 Guests</option>
-            <option value="3">3 Guests</option>
-            <option value="4">4 Guests</option>
-            <option value="5+">5+ Guests</option>
-          </select>
-          <span class="form-error" id="guestsError"></span>
-        </div>
-        <div class="form-group">
-          <label for="roomType">Room Type</label>
-          <select id="roomType" name="room_type" required>
-            <option value="">Select Room</option>
-            <option value="villa1">Villa 1</option>
-            <option value="villaA">Villa A</option>
-            <option value="villaD">Villa D</option>
-            <option value="alejandro">Alejandro</option>
-          </select>
-          <span class="form-error" id="roomTypeError"></span>
-        </div>
-        <button type="submit" class="btn-primary btn-full">Check Availability
-        </button>
-        
-            <div id="availNotice" style="display:none; margin-top:14px; padding:12px 16px;
-          border-radius:10px; font-size:.875rem; font-family:sans-serif;"></div>
+        <div class="booking-grid">
+          <div class="form-group">
+            <label for="checkIn"><i class="fa-regular fa-calendar"></i> Check-In</label>
+            <input type="date" id="checkIn" name="check_in" required />
+            <span class="form-error" id="checkInError"></span>
+          </div>
+          <div class="form-group">
+            <label for="checkOut"><i class="fa-regular fa-calendar-check"></i> Check-Out</label>
+            <input type="date" id="checkOut" name="check_out" required />
+            <span class="form-error" id="checkOutError"></span>
+          </div>
+          <div class="form-group">
+            <label for="guests"><i class="fa-solid fa-user-group"></i> Guests</label>
+            <select id="guests" name="guests" required>
+              <option value="">Select</option>
+              <option value="1">1 Guest</option>
+              <option value="2">2 Guests</option>
+              <option value="3">3 Guests</option>
+              <option value="4">4 Guests</option>
+              <option value="5+">5+ Guests</option>
+            </select>
+            <span class="form-error" id="guestsError"></span>
+          </div>
+          <div class="form-group">
+            <label for="roomType"><i class="fa-solid fa-bed"></i> Room Type</label>
+            <select id="roomType" name="room_type" required>
+              <option value="">Select Room</option>
+              <option value="villa1" data-room="villa1">Villa 1</option>
+              <option value="villaA" data-room="villaA">Villa A</option>
+              <option value="villaD" data-room="villaD">Villa D</option>
+              <option value="alejandro" data-room="alejandro">Alejandro</option>
+            </select>
+            <span class="form-error" id="roomTypeError"></span>
+          </div>
 
-          <button type="button" id="proceedToBilling" class="btn-primary btn-full"
-        style="display:none; margin-top:12px;">
-        Proceed to Billing
-        </button>
-      </div>
+          <!-- Status banner — hidden by default, shown by JS -->
+          <div class="avail-banner" id="availBanner" style="display:none;">
+            <i class="fa-solid fa-circle-info"></i>
+            <span id="availBannerText"></span>
+          </div>
+
+          <!-- Single smart button -->
+          <button type="submit" class="btn-primary btn-full btn-smart" id="smartBtn">
+            <i class="fa-solid fa-magnifying-glass" id="smartBtnIcon"></i>
+            <span id="smartBtnText">Check Availability</span>
+          </button>
+        </div>
       </form>
     </div>
   </section>
@@ -316,7 +319,7 @@
         <ul class="contact-details">
           <li><i class="fa-solid fa-location-dot"></i><span>Brgy, Tagumpay, Orani, Bataan 2112, Philippines</span></li>
           <li><i class="fa-solid fa-phone"></i><a href="tel:+6347237XXXX">+63 47 237-XXXX</a></li>
-          <li><i class="fa-solid fa-envelope"></i><a href="peninsulabataan@gmail.com">info@peninsulabataan.ph</a></li>
+          <li><i class="fa-solid fa-envelope"></i><a href="mailto:info@peninsulabataan.ph">info@peninsulabataan.ph</a></li>
           <li><i class="fa-solid fa-clock"></i><span>Front Desk open 8 to 5</span></li>
         </ul>
       </div>

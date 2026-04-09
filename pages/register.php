@@ -1,26 +1,10 @@
 <?php
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST');
 
 session_start();
 
+require_once "db_connect.php";
 
-$host    = 'localhost';
-$db      = 'resort_db';
-$user    = 'root';
-$pass    = '';
-$charset = 'utf8mb4';
-
-try {
-    $pdo = new PDO("mysql:host=$host;dbname=$db;charset=$charset", $user, $pass, [
-        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    ]);
-} catch (PDOException $e) {
-    echo json_encode(['success' => false, 'message' => 'Database connection failed.']);
-    exit;
-}
 
 $data            = json_decode(file_get_contents('php://input'), true);
 $firstName       = trim($data['first_name'] ?? '');
@@ -46,6 +30,11 @@ if ($password !== $confirmPassword) {
     exit;
 }
 
+if (strlen($password) < 8) {
+    echo json_encode(['success' => false, 'message' => 'Password must be at least 8 characters long.']);
+    exit;
+}
+
 $stmt = $pdo->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
 $stmt->execute([$email]);
 if ($stmt->fetch()) {
@@ -56,10 +45,10 @@ if ($stmt->fetch()) {
 
 $hash = password_hash($password, PASSWORD_BCRYPT);
 $stmt = $pdo->prepare('
-    INSERT INTO users (first_name, last_name, email, phone, password_hash, created_at)
-    VALUES (?, ?, ?, ?, ?, NOW())
+    INSERT INTO users (first_name, last_name, email, phone, password_hash, role, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, NOW())
 ');
-$stmt->execute([$firstName, $lastName, $email, $phone, $hash]);
+$stmt->execute([$firstName, $lastName, $email, $phone, $hash, $role]);
 
 $newId = $pdo->lastInsertId();
 $_SESSION['user_id']   = $newId;

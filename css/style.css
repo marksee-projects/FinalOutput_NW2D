@@ -366,7 +366,7 @@ em { font-style: italic; color: var(--ocean); }
   border-radius: var(--radius);
   box-shadow: var(--shadow-md);
   padding: 48px 52px;
-  max-width: 960px;
+  max-width: 1100px;
   width: 100%;
 }
 
@@ -375,20 +375,50 @@ em { font-style: italic; color: var(--ocean); }
   font-size: 1.8rem;
   font-weight: 400;
   text-align: center;
-  margin-bottom: 36px;
+  margin-bottom: 8px;
   color: var(--text-dark);
 }
 
+.reservation-subtitle {
+  text-align: center;
+  font-size: .88rem;
+  color: var(--text-light);
+  margin-bottom: 32px;
+}
+
 .booking-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.booking-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr) auto;
   gap: 20px;
-  align-items: center; /* Changed from 'end' to 'center' */
+  align-items: center;
+}
+
+.booking-grid .avail-banner {
+  grid-column: 1 / -1;
 }
 
 /* Form elements shared */
 .form-group { display: flex; flex-direction: column; gap: 6px; }
-.form-group label { font-size: .75rem; letter-spacing: .12em; text-transform: uppercase; color: var(--text-mid); font-weight: 500; }
+.form-group label {
+  font-size: .75rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--text-mid);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.form-group label i {
+  font-size: .7rem;
+  color: var(--ocean);
+}
 .form-group input,
 .form-group select,
 .form-group textarea {
@@ -413,6 +443,76 @@ em { font-style: italic; color: var(--ocean); }
 .form-group textarea.invalid { border-color: var(--error); }
 
 .form-error { font-size: .75rem; color: var(--error); min-height: 1rem; }
+
+/* Availability status banner */
+.avail-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 18px;
+  border-radius: 10px;
+  font-size: .85rem;
+  line-height: 1.5;
+  animation: fadeUp .3s ease both;
+}
+.avail-banner i {
+  margin-top: 2px;
+  flex-shrink: 0;
+  font-size: .9rem;
+}
+.avail-banner.avail-success {
+  background: #eaf7ef;
+  color: #1a6e3a;
+  border: 1px solid rgba(39,174,96,.2);
+}
+.avail-banner.avail-success i { color: var(--success); }
+.avail-banner.avail-warning {
+  background: #fff8e6;
+  color: #7a5d00;
+  border: 1px solid rgba(212,160,23,.2);
+}
+.avail-banner.avail-warning i { color: #d4a017; }
+.avail-banner.avail-error {
+  background: #fdf0ef;
+  color: #9b2c2c;
+  border: 1px solid rgba(192,57,43,.15);
+}
+.avail-banner.avail-error i { color: var(--error); }
+
+/* Smart button */
+.btn-smart {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 34px;
+  font-size: .9rem;
+  border-radius: 50px;
+  transition: all var(--transition);
+}
+.btn-smart.btn-proceed {
+  background: var(--success);
+  box-shadow: 0 4px 20px rgba(39,174,96,.35);
+}
+.btn-smart.btn-proceed:hover {
+  background: #219a52;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(39,174,96,.4);
+}
+.btn-smart.btn-loading {
+  opacity: .7;
+  pointer-events: none;
+}
+.btn-smart:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+/* Room option unavailable styling */
+.room-unavailable {
+  color: var(--text-light) !important;
+}
+
 
 /* =================================================================
    ABOUT
@@ -925,8 +1025,7 @@ em { font-style: italic; color: var(--ocean); }
   .amenities-grid { grid-template-columns: repeat(2, 1fr); }
   .about-grid     { gap: 48px; }
   .footer-grid    { grid-template-columns: 1fr 1fr; }
-  .booking-form   { grid-template-columns: repeat(2, 1fr); }
-  .booking-form .btn-primary { grid-column: 1 / -1; }
+  .booking-grid   { grid-template-columns: repeat(2, 1fr); }
 }
 
 /* =================================================================
@@ -952,7 +1051,7 @@ em { font-style: italic; color: var(--ocean); }
   .footer-grid    { grid-template-columns: 1fr; gap: 32px; }
 
   .reservation-card { padding: 32px 24px; }
-  .booking-form { grid-template-columns: 1fr; }
+  .booking-grid { grid-template-columns: 1fr; }
 
   .dining-content { text-align: center; }
 

@@ -1,7 +1,5 @@
 <?php
 header("Content-Type: application/json");
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: POST");
 
 require_once "db_connect.php";
 
@@ -22,9 +20,32 @@ if (!$checkIn || !$checkOut || !$guests || !$roomType) {
     exit;
 }
 
+// SEC-04: Whitelist room_type
+$validRooms = ['villa1', 'villaA', 'villaD', 'alejandro'];
+if (!in_array($roomType, $validRooms)) {
+    http_response_code(400);
+    echo json_encode(["success" => false, "message" => "Invalid room type."]);
+    exit;
+}
+
+// EDGE-02: Whitelist guest count
+$validGuests = ['1', '2', '3', '4', '5+'];
+if (!in_array($guests, $validGuests)) {
+    http_response_code(400);
+    echo json_encode(["success" => false, "message" => "Invalid guest count."]);
+    exit;
+}
+
 if (strtotime($checkOut) <= strtotime($checkIn)) {
     http_response_code(400);
     echo json_encode(["success" => false, "message" => "Check-out must be after check-in."]);
+    exit;
+}
+
+// EDGE-01: Reject past dates
+if (strtotime($checkIn) < strtotime('today')) {
+    http_response_code(400);
+    echo json_encode(["success" => false, "message" => "Check-in date cannot be in the past."]);
     exit;
 }
 
@@ -49,8 +70,7 @@ try {
         echo json_encode([
             "success"  => false,
             "conflict" => true,
-            "message"  => "Already booked with someone else. 
-            Please choose a different date and room."
+            "message"  => "Already booked with someone else. Please choose a different date and room."
         ]);
         exit;
     }
@@ -74,11 +94,7 @@ try {
     ]);
 
 } catch (PDOException $e) {
+    error_log("save_booking error: " . $e->getMessage());
     http_response_code(500);
-    echo json_encode(["success" => false, "message" => "Failed to save: " . $e->getMessage()]);
-}
-
-if (!isset($pdo)) {
-    echo json_encode(["success" => false, "message" => "PDO not initialized"]);
-    exit;
+    echo json_encode(["success" => false, "message" => "Failed to save reservation. Please try again."]);
 }
