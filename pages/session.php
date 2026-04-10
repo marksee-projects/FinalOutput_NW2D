@@ -2,10 +2,11 @@
 header('Content-Type: application/json');
 session_start();
 
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 if (isset($_SESSION['user_id'])) {
-    if (empty($_SESSION['csrf_token'])) {
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-    }
     echo json_encode([
         'loggedIn'   => true,
         'firstName'  => $_SESSION['user_name'],
@@ -13,5 +14,8 @@ if (isset($_SESSION['user_id'])) {
         'csrf_token' => $_SESSION['csrf_token'],
     ]);
 } else {
-    echo json_encode(['loggedIn' => false]);
+    echo json_encode([
+        'loggedIn'   => false,
+        'csrf_token' => $_SESSION['csrf_token']
+    ]);
 }

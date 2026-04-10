@@ -17,6 +17,10 @@ try {
 } catch (PDOException $e) {
     error_log("DB connection failed: " . $e->getMessage());
     http_response_code(500);
-    echo json_encode(["success" => false, "message" => "Database connection failed. Please try again later."]);
+    echo json_encode([
+        "success" => false, 
+        "message" => "Database connection failed. Please ensure XAMPP is running.",
+        "error_type" => "db_connection_error"
+    ]);
     exit;
 }

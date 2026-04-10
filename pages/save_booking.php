@@ -3,6 +3,17 @@ header("Content-Type: application/json");
 session_start();
 
 require_once "db_connect.php";
+require_once "security.php";
+
+// SEC-01: Validate CSRF token for all mutating requests
+validate_csrf();
+
+// BUG-02: Standardize Auth Guards — users must be logged in to book
+if (!isset($_SESSION['user_id'])) {
+    http_response_code(401);
+    echo json_encode(["success" => false, "message" => "Unauthorized. Please sign in to book."]);
+    exit;
+}
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     http_response_code(405);
@@ -52,7 +63,19 @@ if (strtotime($checkIn) < strtotime('today')) {
 
 try {
     $lockName = "room_lock_" . md5($roomType);
-    $pdo->exec("SELECT GET_LOCK('$lockName', 10)");
+    
+    // BUG-01: specific "Busy" timeout message for the GET_LOCK logic
+    $lockStmt = $pdo->prepare("SELECT GET_LOCK(?, 5)"); // Reduce wait to 5s for better UX
+    $lockStmt->execute([$lockName]);
+    if (!$lockStmt->fetchColumn()) {
+        http_response_code(503); // Service Unavailable
+        echo json_encode([
+            "success" => false, 
+            "message" => "The system is currently busy processing other requests for this room. Please try again in a few seconds."
+        ]);
+        exit;
+    }
+    
     $pdo->beginTransaction();
 
     // ── Conflict check ──

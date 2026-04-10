@@ -1,12 +1,9 @@
-const ROOM_RATES = {
-  'villa1':    { label:'Villa 1',   dayRate:2500, nightRate:3000 },
-  'villaA':    { label:'Villa A',   dayRate:2500, nightRate:3000 },
-  'villaD':    { label:'Villa D',   dayRate:4000, nightRate:4500 },
-  'alejandro': { label:'Alejandro', dayRate:3500, nightRate:4000 },
+/* State: Cached configuration from the backend */
+let BILLING_CONFIG = {
+  room_rates: {},
+  svc_rate: 0,
+  vat_rate: 0
 };
-
-const SVC_RATE = 0.05;
-const VAT_RATE = 0.12;
 
 let currentStep    = 1;
 let reservation    = null;  // from sessionStorage
@@ -15,29 +12,25 @@ let selectedMethod = 'cash';
 /* ---------------------------------------------------------------
    HELPERS
 --------------------------------------------------------------- */
-const $ = id => document.getElementById(id);
-const setText = (id, val) => { const el = $(id); if (el) el.textContent = val; };
-
-function php(n) {
-  return '₱' + Number(n).toLocaleString('en-PH', { minimumFractionDigits:2, maximumFractionDigits:2 });
-}
-function fmtDate(str) {
-  if (!str) return '—';
-  const d = new Date(str + 'T00:00:00');
-  return d.toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric' });
-}
-function fmtDateShort(str) {
-  if (!str) return '—';
-  const d = new Date(str + 'T00:00:00');
-  return d.toLocaleDateString('en-PH', { month:'short', day:'numeric', year:'numeric' });
-}
-function guestLabel(g) {
-  return ({ '1':'1 Guest','2':'2 Guests','3':'3 Guests','4':'4 Guests','5+':'5+ Guests' })[g] || (g + ' Guests');
-}
-function calcNights(a, b) {
-  if (!a || !b) return 0;
-  const diff = new Date(b) - new Date(a);
-  return isNaN(diff) ? 0 : Math.max(0, Math.round(diff / 86400000));
+/**
+ * Configuration Initialization
+ */
+async function initConfiguration() {
+  try {
+    const res = await fetch('get_config.php');
+    const data = await res.json();
+    if (data.success) {
+      BILLING_CONFIG.room_rates = data.room_rates;
+      BILLING_CONFIG.svc_rate   = data.svc_rate;
+      BILLING_CONFIG.vat_rate   = data.vat_rate;
+      
+      // Now safe to load confirmation
+      loadConfirmation();
+    }
+  } catch (err) {
+    console.error('Failed to load configuration:', err);
+    loadConfirmation(); // Fallback
+  }
 }
 
 /* ---------------------------------------------------------------
@@ -76,7 +69,9 @@ function loadConfirmation() {
 
   try {
     reservation = JSON.parse(raw);
-  } catch {
+    console.log('Billing: Reservation data loaded', reservation);
+  } catch (err) {
+    console.warn('Billing: Failed to parse reservation JSON', err);
     $('noResNotice').style.display = '';
     $('confLayout').style.display  = 'none';
     showToast('Invalid reservation data. Please book again.', 'error');
@@ -94,14 +89,14 @@ function loadConfirmation() {
   }
 
  
-  const rate      = ROOM_RATES[reservation.roomKey] || { label: reservation.roomKey, dayRate: 0, nightRate: 0 };
+  const rateObj   = BILLING_CONFIG.room_rates[reservation.roomKey] || { label: reservation.roomKey, dayRate: 0, nightRate: 0 };
   
-  const nights    = Number(reservation.nights) || calcNights(reservation.checkIn, reservation.checkOut) || 0;
-  const nightRate = Number(reservation.nightRate) || Number(rate.nightRate) || 0;
+  const nights    = Number(reservation.nights) || calculateNights(reservation.checkIn, reservation.checkOut) || 0;
+  const nightRate = Number(reservation.nightRate) || Number(rateObj.nightRate) || 0;
   
   const subtotal  = nights * nightRate;
-  const svc       = Math.round(subtotal * SVC_RATE);
-  const vat       = Math.round(subtotal * VAT_RATE);
+  const svc       = Math.round(subtotal * BILLING_CONFIG.svc_rate);
+  const vat       = Math.round(subtotal * BILLING_CONFIG.vat_rate);
   const total     = subtotal + svc + vat;
 
   /* Cache computed values */
@@ -111,35 +106,38 @@ function loadConfirmation() {
   reservation._svc      = svc;
   reservation._vat      = vat;
   reservation._total    = total;
-  reservation._room     = reservation.roomLabel || rate.label || reservation.roomKey || '—';
+  reservation._room     = reservation?.roomLabel || rateObj?.label || reservation?.roomKey || '—';
   
   // Re-save to session storage to ensure values persist correctly
   sessionStorage.setItem('pendingReservation', JSON.stringify(reservation));
 
-  setText('confId',           reservation.id);
-  setText('confCheckIn',      fmtDate(reservation.checkIn));
-  setText('confCheckOut',     fmtDate(reservation.checkOut));
-  setText('confNightsSummary', nights + (nights===1?' Night':' Nights') + ', ' + guestLabel(reservation.guests));
-  setText('confRoomLine',     reservation._room);
-  setText('confGuestLine',    guestLabel(reservation.guests) + '  ·  ' + php(nightRate) + ' / night');
-  setText('confSubtotal',     php(subtotal));
-  setText('confServiceFee',   php(svc));
-  setText('confVat',          php(vat));
-  setText('confTotal',        php(total));
+  setText('confId',           reservation?.id);
+  setText('confCheckIn',      formatDate(reservation?.checkIn));
+  setText('confCheckOut',     formatDate(reservation?.checkOut));
+  setText('confNightsSummary', nights + (nights===1?' Night':' Nights') + ', ' + getGuestLabel(reservation?.guests));
+  setText('confRoomLine',     reservation?._room);
+  setText('confGuestLine',    getGuestLabel(reservation?.guests) + '  ·  ' + formatPHP(nightRate) + ' / night');
+  setText('confSubtotal',     formatPHP(subtotal));
+  setText('confServiceFee',   formatPHP(svc));
+  setText('confVat',          formatPHP(vat));
+  setText('confTotal',        formatPHP(total));
 
-  setText('sbRoom',     reservation._room);
-  setText('sbGuests',   guestLabel(reservation.guests));
-  setText('sbRate',     php(nightRate) + ' / night');
+  /* ── Sidebar (Step 1) ── */
+  setText('sbRoom',     reservation?._room);
+  setText('sbGuests',   getGuestLabel(reservation?.guests));
+  setText('sbRate',     formatPHP(nightRate) + ' / night');
   setText('sbNights',   nights + (nights===1?' night':' nights'));
-  setText('sbCheckIn',  fmtDate(reservation.checkIn));
-  setText('sbCheckOut', fmtDate(reservation.checkOut));
-  setText('sbSubtotal', php(subtotal));
-  setText('sbService',  php(svc));
-  setText('sbVat',      php(vat));
-  setText('sbGrand',    php(total));
+  setText('sbCheckIn',  formatDate(reservation?.checkIn));
+  setText('sbCheckOut', formatDate(reservation?.checkOut));
+  setText('sbSubtotal', formatPHP(subtotal));
+  setText('sbService',  formatPHP(svc));
+  setText('sbVat',      formatPHP(vat));
+  setText('sbGrand',    formatPHP(total));
 
-  $('noResNotice').style.display = 'none';
-  $('confLayout').style.display  = '';
+  // Ensure layouts are toggled correctly BEFORE population to ensure they are visible even if partial error occurs
+  console.log('Billing: Revealing layout');
+  if ($('noResNotice')) $('noResNotice').style.display = 'none';
+  if ($('confLayout'))  $('confLayout').style.display  = 'grid'; // Grid layout per CSS
 }
 
 /* Go to payment page */
@@ -153,16 +151,16 @@ function goBack() { showStep(1); }
 
 function fillPaymentSummary() {
   if (!reservation) return;
-  setText('ps-id',      reservation.id);
-  setText('ps-room',    reservation._room);
-  setText('ps-guests',  guestLabel(reservation.guests));
-  setText('ps-in',      fmtDateShort(reservation.checkIn));
-  setText('ps-out',     fmtDateShort(reservation.checkOut));
-  setText('ps-nights',  reservation._nights + (reservation._nights===1?' night':' nights'));
-  setText('ps-sub',     php(reservation._subtotal));
-  setText('ps-svc',     php(reservation._svc));
-  setText('ps-vat',     php(reservation._vat));
-  setText('ps-total',   php(reservation._total));
+  setText('ps-id',      reservation?.id);
+  setText('ps-room',    reservation?._room);
+  setText('ps-guests',  getGuestLabel(reservation?.guests));
+  setText('ps-in',      formatDateShort(reservation?.checkIn));
+  setText('ps-out',     formatDateShort(reservation?.checkOut));
+  setText('ps-nights',  (reservation?._nights || 0) + (reservation?._nights===1?' night':' nights'));
+  setText('ps-sub',     formatPHP(reservation?._subtotal || 0));
+  setText('ps-svc',     formatPHP(reservation?._svc || 0));
+  setText('ps-vat',     formatPHP(reservation?._vat || 0));
+  setText('ps-total',   formatPHP(reservation?._total || 0));
 }
 
 function selectMethod(m) {
@@ -216,7 +214,8 @@ async function submitPayment() {
 
   try {
     const fd = new FormData();
-    fd.append("reservation_id", reservation.dbId); // Securely link the pending reservation true dbId
+    fd.append("reservation_id", reservation.dbId); 
+    fd.append("csrf_token",     getCSRFToken()); // SEC-01: Inject CSRF token
     
     // Phase 1: Securely append guest data to store in backend
     fd.append("guest_name", guest.firstName + " " + guest.lastName);
@@ -243,16 +242,16 @@ async function submitPayment() {
       setText('rcEmail',       guest.email);
       setText('rcPhone',       guest.phone);
       setText('rcMethod',      methodLabels[guest.method] || guest.method);
-      setText('rcCheckIn',     fmtDate(reservation.checkIn));
-      setText('rcCheckOut',    fmtDate(reservation.checkOut));
+      setText('rcCheckIn',     formatDate(reservation.checkIn));
+      setText('rcCheckOut',    formatDate(reservation.checkOut));
       
       // Use Backend exact values for price components
       setText('rcNights',      r.nights + (r.nights === 1 ? ' night' : ' nights'));
-      setText('rcRoomLine',    r.room + ' (' + guestLabel(reservation.guests) + ')');
-      setText('rcSubtotal',    php(r.subtotal));
-      setText('rcServiceFee',  php(r.svc));
-      setText('rcVat',         php(r.vat));
-      setText('rcTotal',       php(r.total));
+      setText('rcRoomLine',    r.room + ' (' + getGuestLabel(reservation.guests) + ')');
+      setText('rcSubtotal',    formatPHP(r.subtotal));
+      setText('rcServiceFee',  formatPHP(r.svc));
+      setText('rcVat',         formatPHP(r.vat));
+      setText('rcTotal',       formatPHP(r.total));
 
       showStep(3);
       showToast('Reservation confirmed! 🎉', 'success');
@@ -269,36 +268,13 @@ async function submitPayment() {
 }
 
 
-function showToast(msg, type='success') {
-  const t = $('toast');
-  const icons = { success:'fa-circle-check', error:'fa-circle-xmark', info:'fa-circle-info' };
-  t.innerHTML = `<i class="fa-solid ${icons[type]||'fa-circle-info'}"></i> ${msg}`;
-  t.className = `toast ${type} show`;
-  clearTimeout(t._t);
-  t._t = setTimeout(() => t.classList.remove('show'), 3800);
-}
+/* Local showToast removed in favor of utils.js version */
 
-/* ------- LOGIN MODAL ------- */
-function openLoginModal()  { $('loginModal').classList.add('active'); }
-function closeLoginModal() { $('loginModal').classList.remove('active'); }
-function togglePassword() {
-  const inp = $('loginPassword'), icon = $('eyeIcon');
-  if (inp.type === 'password') { inp.type='text';     icon.classList.replace('fa-eye','fa-eye-slash'); }
-  else                         { inp.type='password'; icon.classList.replace('fa-eye-slash','fa-eye'); }
-}
+/* Modal and password toggles moved to core.js */
 
 
-const navbar = document.getElementById('navbar');
-window.addEventListener('scroll', () => navbar.classList.toggle('scrolled', window.scrollY > 10));
-$('hamburger').addEventListener('click', function() {
-  this.classList.toggle('open');
-  $('mobileMenu').classList.toggle('open');
-});
-$('loginModal').addEventListener('click', e => { if (e.target === $('loginModal')) closeLoginModal(); });
+/* Navbar scroll and mobile menu listeners moved to core.js */
 
 
-if ($('year')) $('year').textContent = new Date().getFullYear();
-
-
-loadConfirmation();
+initConfiguration();
 showStep(1);

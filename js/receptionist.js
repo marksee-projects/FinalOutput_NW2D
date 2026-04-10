@@ -1,11 +1,33 @@
-const roomLabels = {
-  villa1:    "Villa 1",
-  villaA:    "Villa A",
-  villaD:    "Villa D",
-  alejandro: "Alejandro",
+/* State: Cached configuration from the backend */
+let DASH_CONFIG = {
+  room_rates: {}
 };
 
-let csrfToken = '';
+async function initDashboard() {
+  try {
+    const configRes = await fetch('get_config.php');
+    const configData = await configRes.json();
+    if (configData.success) {
+      DASH_CONFIG.room_rates = configData.room_rates;
+    }
+    
+    const authRes = await fetch('session.php');
+    if (!authRes.ok) throw new Error('Auth failed');
+    const authData = await authRes.json();
+    
+    if (!authData.loggedIn || authData.role !== 'receptionist') {
+      alert('Access denied. Receptionist login required.');
+      window.location.href = 'index.html';
+      return;
+    }
+    
+    setCSRFToken(authData.csrf_token || '');
+    loadReservations();
+  } catch (err) {
+    console.error('Dashboard init failed:', err);
+    window.location.href = 'index.html';
+  }
+}
 
 async function loadReservations() {
   const status = document.getElementById("filterStatus").value;
@@ -59,7 +81,7 @@ function renderTable(rows) {
   tbody.innerHTML = rows.map(r => `
     <tr>
       <td class="td-id">#${sanitize(r.id)}</td>
-      <td class="td-room">${sanitize(roomLabels[r.room_type] || r.room_type)}</td>
+      <td class="td-room">${sanitize((DASH_CONFIG.room_rates[r.room_type] || {}).label || r.room_type)}</td>
       <td class="td-date">${sanitize(formatDate(r.check_in))}</td>
       <td class="td-date">${sanitize(formatDate(r.check_out))}</td>
       <td class="td-date">${sanitize(r.guests)}</td>
@@ -97,7 +119,7 @@ async function updateStatus(e, id) {
   const status = e.target.status.value;
   const fd = new FormData();
   fd.append("id", id); fd.append("status", status);
-  fd.append("csrf_token", csrfToken);
+  fd.append("csrf_token", getCSRFToken());
   try {
     const res    = await fetch("update_booking.php", { method: "POST", body: fd });
     const result = await res.json();
@@ -113,7 +135,7 @@ async function deleteReservation(id) {
   if (!confirm("Delete reservation #" + id + "?\nThis cannot be undone.")) return;
   const fd = new FormData();
   fd.append("id", id);
-  fd.append("csrf_token", csrfToken);
+  fd.append("csrf_token", getCSRFToken());
   try {
     const res    = await fetch("delete_booking.php", { method: "POST", body: fd });
     const result = await res.json();
@@ -131,41 +153,13 @@ function resetFilters() {
   loadReservations();
 }
 
-function formatDate(str) {
-  if (!str) return "—";
-  return new Date(str + "T00:00:00").toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" });
-}
 function formatDateTime(str) {
   if (!str) return "—";
-  return new Date(str).toLocaleString("en-US", { month:"short", day:"numeric", year:"numeric", hour:"2-digit", minute:"2-digit" });
+  return new Date(str).toLocaleString("en-PH", { month:"short", day:"numeric", year:"numeric", hour:"2-digit", minute:"2-digit" });
 }
 
-function showToast(msg, type = "") {
-  const t = document.getElementById("toast");
-  t.textContent = msg;
-  t.className   = "toast show" + (type ? " " + type : "");
-  setTimeout(() => t.className = "toast", 3500);
-}
-
-// ── Auth guard: redirect if not receptionist ──
-(async function checkAuth() {
-  try {
-    const res = await fetch('session.php');
-    if (!res.ok) throw new Error('Auth failed');
-    const data = await res.json();
-    if (!data.loggedIn || data.role !== 'receptionist') {
-      alert('Access denied. Receptionist login required.');
-      window.location.href = 'index.html';
-      return;
-    }
-    csrfToken = data.csrf_token || '';
-  } catch {
-    window.location.href = 'index.html';
-    return;
-  }
-  // Only load data after auth passes
-  loadReservations();
-})();
+// ── Auth guard & Init ──
+initDashboard();
 
 // Auto-refresh the dashboard every 30 seconds
 setInterval(loadReservations, 30000);

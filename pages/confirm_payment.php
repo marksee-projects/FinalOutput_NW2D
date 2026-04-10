@@ -3,6 +3,11 @@ header('Content-Type: application/json');
 session_start();
 
 require_once "db_connect.php";
+require_once "config.php";
+require_once "security.php";
+
+// SEC-01: Validate CSRF token for all mutating requests
+validate_csrf();
 
 $resId = intval($_POST['reservation_id'] ?? 0);
 
@@ -13,9 +18,10 @@ if (!$resId) {
 }
 
 try {
+    // BUG-02: Standardize Auth Guards
     if (!isset($_SESSION['user_id'])) {
         http_response_code(401);
-        echo json_encode(["success" => false, "message" => "Unauthorized access.", "receipt" => null]);
+        echo json_encode(["success" => false, "message" => "Unauthorized access. Please sign in.", "receipt" => null]);
         exit;
     }
 
@@ -30,14 +36,7 @@ try {
          exit;
     }
 
-    // 2. Server-side ROOM_RATES (source of truth)
-    $ROOM_RATES = [
-        'villa1'    => ['label' => 'Villa 1',   'nightRate' => 3000],
-        'villaA'    => ['label' => 'Villa A',   'nightRate' => 3000],
-        'villaD'    => ['label' => 'Villa D',   'nightRate' => 4500],
-        'alejandro' => ['label' => 'Alejandro', 'nightRate' => 4000],
-    ];
-
+    // 2. SEC-02: Use Centralized Source of Truth for pricing
     $roomKey = $reservation['room_type'];
     $rate    = $ROOM_RATES[$roomKey]['nightRate'] ?? 0;
 
@@ -48,8 +47,8 @@ try {
     $nights = max(1, $diff->days);
 
     $subtotal = $nights * $rate;
-    $svc      = $subtotal * 0.05;
-    $vat      = $subtotal * 0.12;
+    $svc      = round($subtotal * SVC_RATE);
+    $vat      = round($subtotal * VAT_RATE);
     $total    = $subtotal + $svc + $vat;
 
     $guestName  = trim($_POST['guest_name'] ?? '');

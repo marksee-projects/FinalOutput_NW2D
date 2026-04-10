@@ -2,23 +2,22 @@
 header("Content-Type: application/json");
 session_start();
 
+require_once "db_connect.php";
+require_once "security.php";
+
+// SEC-01: Standardized CSRF token validation
+validate_csrf();
+
+// BUG-02: Standardize Auth Guards
 if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'receptionist') {
     http_response_code(403);
-    echo json_encode(["success" => false, "message" => "Unauthorized. Receptionist access required."]);
+    echo json_encode(["success" => false, "message" => "Unauthorized access. Receptionist role required."]);
     exit;
 }
-
-require_once "db_connect.php";
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     http_response_code(405);
     echo json_encode(["success" => false, "message" => "Method not allowed."]);
-    exit;
-}
-
-if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'])) {
-    http_response_code(403);
-    echo json_encode(["success" => false, "message" => "CSRF token mismatch."]);
     exit;
 }
 
@@ -31,7 +30,7 @@ if (!$id) {
 }
 
 try {
-    $stmt = $pdo->prepare("UPDATE reservations SET status = 'deleted' WHERE id = :id");
+    $stmt = $pdo->prepare("DELETE FROM reservations WHERE id = :id");
     $stmt->execute([":id" => $id]);
     echo json_encode(["success" => true, "message" => "Reservation deleted."]);
 } catch (PDOException $e) {

@@ -9,60 +9,15 @@
 /* =================================================================
    CONSTANTS & STATE
    ================================================================= */
-const navbar      = document.getElementById('navbar');
-const hamburger   = document.getElementById('hamburger');
-const mobileMenu  = document.getElementById('mobileMenu');
-const loginModal  = document.getElementById('loginModal');
-const toast       = document.getElementById('toast');
-const yearSpan    = document.getElementById('year');
+/* Navbar, Mobile Menu, and Modals have been moved to core.js */
 
-/* Room rates keyed by DB value → display label + pricing */
-const ROOM_RATES = {
-  'villa1':    { label: 'Villa 1',   dayRate: 2500, nightRate: 3000 },
-  'villaA':    { label: 'Villa A',   dayRate: 2500, nightRate: 3000 },
-  'villaD':    { label: 'Villa D',   dayRate: 4000, nightRate: 4500 },
-  'alejandro': { label: 'Alejandro', dayRate: 3500, nightRate: 4000 },
+/* State: Cached configuration from the backend */
+let APP_CONFIG = {
+  room_rates: {},
+  svc_rate: 0,
+  vat_rate: 0
 };
 
-// Set current year in footer
-if (yearSpan) yearSpan.textContent = new Date().getFullYear();
-
-
-/* =================================================================
-   NAVBAR — scroll effect
-   ================================================================= */
-function handleNavbarScroll() {
-  if (window.scrollY > 60) {
-    navbar.classList.add('scrolled');
-  } else {
-    navbar.classList.remove('scrolled');
-  }
-}
-
-window.addEventListener('scroll', handleNavbarScroll, { passive: true });
-handleNavbarScroll(); // run on load
-
-
-/* =================================================================
-   MOBILE MENU — hamburger toggle
-   ================================================================= */
-hamburger.addEventListener('click', function () {
-  const isOpen = mobileMenu.classList.toggle('open');
-  hamburger.classList.toggle('open', isOpen);
-  hamburger.setAttribute('aria-expanded', isOpen);
-  // Prevent body scroll when menu is open
-  document.body.style.overflow = isOpen ? 'hidden' : '';
-});
-
-// Close mobile menu when a link is clicked
-document.querySelectorAll('.mobile-link').forEach(link => {
-  link.addEventListener('click', () => {
-    mobileMenu.classList.remove('open');
-    hamburger.classList.remove('open');
-    hamburger.setAttribute('aria-expanded', false);
-    document.body.style.overflow = '';
-  });
-});
 
 
 /* =================================================================
@@ -82,49 +37,51 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 });
 
 
-/* =================================================================
-   TOAST NOTIFICATION HELPER
-   ================================================================= */
-let toastTimer = null;
-
-function showToast(message, type = 'info') {
-  toast.textContent = message;
-  toast.className = `toast ${type} show`;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => {
-    toast.classList.remove('show');
-  }, 3800);
-}
-
-
-/* =================================================================
-   FORM VALIDATION HELPERS
-   ================================================================= */
-
 /**
- * Sets an error on an input field.
- * @param {HTMLElement} input
- * @param {HTMLElement} errorEl
- * @param {string} message
+ * Configuration Initialization
  */
-function setError(input, errorEl, message) {
-  input.classList.add('invalid');
-  if (errorEl) errorEl.textContent = message;
+async function initConfiguration() {
+  try {
+    const res = await fetch('get_config.php');
+    const data = await res.json();
+    if (data.success) {
+      APP_CONFIG.room_rates = data.room_rates;
+      APP_CONFIG.svc_rate   = data.svc_rate;
+      APP_CONFIG.vat_rate   = data.vat_rate;
+      
+      // Update room rates if they were already mapped
+      if (typeof roomOptionDefaults !== 'undefined') {
+         updateRoomDropdown();
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load configuration:', err);
+  }
 }
 
 /**
- * Clears error state on an input field.
+ * Dynamic Subtotal Estimation (IMP-02)
  */
-function clearError(input, errorEl) {
-  input.classList.remove('invalid');
-  if (errorEl) errorEl.textContent = '';
-}
-
-/**
- * Validates an email format.
- */
-function isValidEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+function updateEstimatedSubtotal() {
+  const inVal  = checkIn.value;
+  const outVal = checkOut.value;
+  const rType  = roomType.value;
+  
+  if (!inVal || !outVal || !rType || !APP_CONFIG.room_rates[rType]) {
+    hideBanner();
+    return;
+  }
+  
+  const nights = calculateNights(inVal, outVal);
+  if (nights <= 0) return;
+  
+  const rateObj  = APP_CONFIG.room_rates[rType];
+  const subtotal = nights * rateObj.nightRate;
+  const svc      = Math.round(subtotal * APP_CONFIG.svc_rate);
+  const vat      = Math.round(subtotal * APP_CONFIG.vat_rate);
+  const total    = subtotal + svc + vat;
+  
+  showBanner(`Estimated Total: ${formatPHP(total)} for ${nights} night(s).`, 'info');
 }
 
 
@@ -245,14 +202,24 @@ async function checkAvailability() {
 
   try {
     const url = `check_availability.php?in=${encodeURIComponent(checkIn.value)}&out=${encodeURIComponent(checkOut.value)}`;
-    const res  = await fetch(url);
+    const res = await fetch(url);
+    
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || `Server error: ${res.status}`);
+    }
+
     const data = await res.json();
+
+    if (!data.success) {
+      throw new Error(data.message || 'Could not verify availability.');
+    }
 
     bookedRooms = data.booked_rooms || [];
     availChecked = true;
     updateRoomDropdown();
 
-    const totalRooms = roomOptionDefaults.filter(o => o.value).length;  // exclude placeholder
+    const totalRooms = roomOptionDefaults.filter(o => o.value).length;
     const availCount = totalRooms - bookedRooms.length;
 
     if (availCount === 0) {
@@ -260,20 +227,20 @@ async function checkAvailability() {
       formState = 'check';
     } else if (bookedRooms.length > 0) {
       showBanner(`${availCount} of ${totalRooms} rooms available. Unavailable rooms are greyed out.`, 'warning');
-      formState = 'check'; // still need to pick a room
+      formState = 'check';
     } else {
       showBanner('All rooms are available for your selected dates!', 'success');
-      formState = 'check'; // still need to pick a room
+      formState = 'check';
     }
 
   } catch (err) {
     console.error('Availability check failed:', err);
-    showBanner('Could not check availability. Make sure XAMPP is running.', 'error');
+    showBanner(`❌ ${err.message}`, 'error');
     bookedRooms = [];
     availChecked = false;
+  } finally {
+    updateSmartButton();
   }
-
-  updateSmartButton();
 }
 
 /* ── When dates change, reset availability and re-check ── */
@@ -295,6 +262,7 @@ checkIn.addEventListener('change', () => {
   // Auto-check if both dates are set
   if (checkIn.value && checkOut.value) {
     checkAvailability();
+    updateEstimatedSubtotal();
   }
 });
 
@@ -313,6 +281,7 @@ checkOut.addEventListener('change', () => {
       return;
     }
     checkAvailability();
+    updateEstimatedSubtotal();
   }
 });
 
@@ -325,6 +294,7 @@ roomType.addEventListener('change', () => {
     formState = 'check';
   }
   updateSmartButton();
+  updateEstimatedSubtotal();
 });
 
 guests.addEventListener('change', () => {
@@ -398,10 +368,11 @@ bookingForm.addEventListener("submit", async function(e) {
     smartBtnText.textContent = 'Saving...';
 
     const formData = new FormData();
-    formData.append("check_in",  checkIn.value);
-    formData.append("check_out", checkOut.value);
-    formData.append("guests",    guests.value);
-    formData.append("room_type", roomType.value);
+    formData.append("check_in",   checkIn.value);
+    formData.append("check_out",  checkOut.value);
+    formData.append("guests",     guests.value);
+    formData.append("room_type",  roomType.value);
+    formData.append("csrf_token", getCSRFToken());
 
     try {
       const response = await fetch("save_booking.php", {
@@ -409,11 +380,16 @@ bookingForm.addEventListener("submit", async function(e) {
         body:   formData,
       });
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Server error: ${response.status} ${response.statusText}`);
+      }
+
       const result = await response.json();
 
       if (result.success) {
         const roomKey   = roomType.value;
-        const rate      = ROOM_RATES[roomKey] || {};
+        const rate      = APP_CONFIG.room_rates[roomKey] || {};
         const nightRate = rate.nightRate || 0;
         const n = Math.max(1, Math.round(
           (new Date(checkOut.value) - new Date(checkIn.value)) / 86400000
@@ -456,7 +432,7 @@ bookingForm.addEventListener("submit", async function(e) {
 
     } catch (err) {
       console.error("Fetch error:", err);
-      showToast("❌ Could not connect to the server. Make sure XAMPP is running.", "error");
+      showToast(`❌ ${err.message}`, "error");
       formState = 'check';
       updateSmartButton();
     }
@@ -469,91 +445,7 @@ bookingForm.addEventListener("submit", async function(e) {
    ================================================================= */
 
   
-/* =================================================================
-   LOGIN MODAL 
-   ================================================================= */
-  // Modal controls
-function openLoginModal() {
-  document.getElementById('loginModal').classList.add('active');
-  document.body.style.overflow = 'hidden';
-}
-function closeLoginModal() {
-  document.getElementById('loginModal').classList.remove('active');
-  document.body.style.overflow = '';
-}
-// Close when clicking the dark overlay
-document.getElementById('loginModal').addEventListener('click', function(e) {
-  if (e.target === this) closeLoginModal();
-});
-// Close on Escape key
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') closeLoginModal();
-});
-// Toggle password visibility
-function togglePassword() {
-  const pw = document.getElementById('loginPassword');
-  const icon = document.getElementById('eyeIcon');
-  if (pw.type === 'password') {
-    pw.type = 'text';
-    icon.classList.replace('fa-eye', 'fa-eye-slash');
-  } else {
-    pw.type = 'password';
-    icon.classList.replace('fa-eye-slash', 'fa-eye');
-  }
-}
-
-/* =================================================================
-   REGISTER MODAL 
-   ================================================================= */
-
-   // Register modal controls
-function openRegisterModal() {
-  document.getElementById('registerModal').classList.add('active');
-  document.body.style.overflow = 'hidden';
-}
-function closeRegisterModal() {
-  document.getElementById('registerModal').classList.remove('active');
-  document.body.style.overflow = '';
-}
-
-// Switch between modals
-function switchToRegister() {
-  closeLoginModal();
-  setTimeout(() => openRegisterModal(), 150);
-}
-function switchToLogin() {
-  closeRegisterModal();
-  setTimeout(() => openLoginModal(), 150);
-}
-
-// Close register modal on backdrop click
-document.getElementById('registerModal').addEventListener('click', function(e) {
-  if (e.target === this) closeRegisterModal();
-});
-
-// Toggle password visibility for register
-function toggleRegPassword() {
-  const pw = document.getElementById('regPassword');
-  const icon = document.getElementById('regEyeIcon');
-  if (pw.type === 'password') {
-    pw.type = 'text';
-    icon.classList.replace('fa-eye', 'fa-eye-slash');
-  } else {
-    pw.type = 'password';
-    icon.classList.replace('fa-eye-slash', 'fa-eye');
-  }
-}
-function toggleRegConfirmPassword() {
-  const pw = document.getElementById('regConfirmPassword');
-  const icon = document.getElementById('regConfirmEyeIcon');
-  if (pw.type === 'password') {
-    pw.type = 'text';
-    icon.classList.replace('fa-eye', 'fa-eye-slash');
-  } else {
-    pw.type = 'password';
-    icon.classList.replace('fa-eye-slash', 'fa-eye');
-  }
-}
+/* Modal toggles and session check moved to core.js */
 
 
 // ===== LOGIN SUBMIT =====
@@ -580,6 +472,7 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
     if (data.success) {
       localStorage.setItem('firstName', data.user.name.split(' ')[0]);
       localStorage.setItem('role', data.user.role); 
+      setCSRFToken(data.user.csrf_token);
       showToast(data.message, 'success');
       closeLoginModal();
       setTimeout(() => {
@@ -622,6 +515,7 @@ document.getElementById('registerForm').addEventListener('submit', async functio
     password:         document.getElementById('regPassword').value,
     confirm_password: document.getElementById('regConfirmPassword').value,
     role:             'user',
+    csrf_token:       getCSRFToken(),
   };
 
   try {
@@ -633,6 +527,7 @@ document.getElementById('registerForm').addEventListener('submit', async functio
     const data = await res.json();
 
     if (data.success) {
+      setCSRFToken(data.user.csrf_token);
       showToast(data.message);
       closeRegisterModal();
       this.reset();
@@ -649,81 +544,11 @@ document.getElementById('registerForm').addEventListener('submit', async functio
   }
 });
 
-/* =================================================================
-   SESSION CHECK — replace Login button with first name
-   ================================================================= */
-async function checkSession() {
-  try {
-    const res = await fetch('session.php');
-    if (!res.ok) return;
-    const data = await res.json();
-
-    if (data.loggedIn) {
-      // Update DESKTOP nav
-      const loginBtn = document.getElementById('loginBtn');
-      if (loginBtn) {
-        loginBtn.textContent = data.firstName;
-        loginBtn.setAttribute('onclick', '');
-        loginBtn.addEventListener('click', handleLogout);
-      }
-      
-      // Update MOBILE nav
-      const loginBtnMobile = document.getElementById('loginBtnMobile');
-      if (loginBtnMobile) {
-        loginBtnMobile.textContent = data.firstName;
-        loginBtnMobile.setAttribute('onclick', '');
-        loginBtnMobile.addEventListener('click', handleLogout);
-      }
-
-      // Inject Receptionist button natively into the main navigation flow
-      if (data.role === 'receptionist') {
-        const navLinks = document.querySelector('.nav-links');
-        if (navLinks && !document.getElementById('dashBtnDesktop')) {
-          const dash = document.createElement('a');
-          dash.href = 'receptionist.html';
-          dash.id = 'dashBtnDesktop';
-          dash.textContent = 'Receptionist';
-          navLinks.appendChild(dash);
-        }
-
-        const mobileNav = document.querySelector('.mobile-menu nav');
-        if (mobileNav && !document.getElementById('dashBtnMobile')) {
-          const dashMob = document.createElement('a');
-          dashMob.href = 'receptionist.html';
-          dashMob.className = 'mobile-link';
-          dashMob.id = 'dashBtnMobile';
-          dashMob.textContent = 'Receptionist';
-          // Insert it dynamically before the mobile-cta block
-          const mobileCta = mobileNav.querySelector('.mobile-cta');
-          if (mobileCta) {
-            mobileNav.insertBefore(dashMob, mobileCta);
-          } else {
-            mobileNav.appendChild(dashMob);
-          }
-        }
-      }
-    } else {
-      localStorage.clear();
-    }
-  } catch (err) {
-    console.error('Session check failed:', err);
-  }
-}
-
-function handleLogout(e) {
-  e.preventDefault();
-  if (confirm('Are you sure you want to log out?')) {
-    localStorage.clear();
-    window.location.href = 'logout.php';
-  }
-}
+/* Session check and handleLogout moved to core.js */
 
 document.addEventListener('DOMContentLoaded', () => {
-  checkSession();
-
-  if (!localStorage.getItem('firstName')) {
-    openLoginModal();
-  }
+  initConfiguration();
+  // checkSession and modal checks are now handled in core.js
 });
 /* =================================================================
    SCROLL REVEAL — simple intersection observer for cards

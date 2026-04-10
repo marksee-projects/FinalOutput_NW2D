@@ -51,9 +51,13 @@ $stmt = $pdo->prepare('
 $stmt->execute([$firstName, $lastName, $email, $phone, $hash, $role]);
 
 $newId = $pdo->lastInsertId();
+
+session_regenerate_id(true);
+
 $_SESSION['user_id']   = $newId;
 $_SESSION['user_name'] = $firstName;
 $_SESSION['user_role'] = 'user';
+$_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 
 echo json_encode([
     'success' => true,
@@ -64,5 +68,6 @@ echo json_encode([
         'email' => $email,
         'phone' => $phone,
         'role'  => 'user',
+        'csrf_token' => $_SESSION['csrf_token'],
     ]
 ]);

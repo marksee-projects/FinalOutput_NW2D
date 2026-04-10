@@ -80,7 +80,8 @@ try {
     http_response_code(500);
     echo json_encode([
         "success"      => false,
-        "message"      => "Failed to check availability. Please try again.",
-        "booked_rooms" => []
+        "message"      => "Failed to check availability. Please ensure XAMPP is running.",
+        "booked_rooms" => [],
+        "error_type"   => "availability_check_error"
     ]);
 }
